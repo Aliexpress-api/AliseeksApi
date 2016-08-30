@@ -6,6 +6,10 @@ using Microsoft.AspNetCore.Mvc;
 using AliseeksApi.Models.Search;
 using AliseeksApi.Models;
 using AliseeksApi.Services;
+using AliseeksApi.Scheduling;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace AliseeksApi.Controllers
 {
@@ -13,44 +17,62 @@ namespace AliseeksApi.Controllers
     public class SearchController : Controller
     {
         IAliexpressService ali;
+        IMemoryCache cache;
+        IScheduler scheduler;
+        ILogger logger;
 
-        public SearchController(IAliexpressService ali)
+        public SearchController(IAliexpressService ali, IMemoryCache cache,
+            IScheduler scheduler, ILogger<SearchController> logger)
         {
             this.ali = ali;
+            this.cache = cache;
+            this.scheduler = scheduler;
+            this.logger = logger;
         }
 
         // GET api/search?[QueryString Args]
+        //TODO: Refractor caching logic, seperate to a different class or something
         [HttpGet]
         public async Task<IEnumerable<Item>> Get([FromQuery]SearchCriteria search)
         {
-            var response = await ali.SearchItems(search);
+            string qs = JsonConvert.SerializeObject(search);
+            IEnumerable<Item> response;
+            if(!cache.TryGetValue<IEnumerable<Item>>(qs, out response))
+            {
+                response = await ali.SearchItems(search);
+
+                cache.Set<IEnumerable<Item>>(qs, response,
+                    new MemoryCacheEntryOptions()
+                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(5)));
+
+                logger.LogCritical("SETTING CACHE");
+            }
+            else
+            {
+                logger.LogCritical("USING CACHE");
+            }
+
             return response;
         }
 
-        // GET api/values/5
-        [HttpGet("{id}")]
-        public string Get(int id)
+        [HttpGet]
+        [Route("/api/[controller]/cache")]
+        public async Task<IActionResult> Cache([FromQuery]SearchCriteria search)
         {
-            return "value";
-        }
+            string qs = JsonConvert.SerializeObject(search);
+            IEnumerable<Item> dummy;
+            if(!cache.TryGetValue<IEnumerable<Item>>(qs, out dummy))
+            {
+                var items = await ali.SearchItems(search);
 
-        // POST api/values
-        [HttpPost]
-        public void Post([FromBody]string value)
-        {
-        }
+                cache.Set<IEnumerable<Item>>(qs, items,
+                    new MemoryCacheEntryOptions()
+                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(5)));
 
-        // PUT api/values/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody]string value)
-        {
-        }
+                logger.LogCritical("Setting cache from cache request");
+            }
 
-        // DELETE api/values/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
-
+            return Ok();
         }
     }
 }

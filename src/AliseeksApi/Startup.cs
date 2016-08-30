@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using AliseeksApi.Services;
 using AliseeksApi.Utility;
 using AliseeksApi.Middleware;
+using AliseeksApi.Scheduling;
 
 namespace AliseeksApi
 {
@@ -33,6 +34,8 @@ namespace AliseeksApi
             // Add framework services.
             services.AddMvc();
 
+            services.AddMemoryCache();
+
             configureDependencyInjection(services);
         }
 
@@ -51,6 +54,7 @@ namespace AliseeksApi
         {
             services.AddTransient<IAliexpressService, AliexpressService>();
             services.AddTransient<IHttpService, HttpService>();
+            services.AddTransient<IScheduler, Scheduler>();
         }
     }
 }
