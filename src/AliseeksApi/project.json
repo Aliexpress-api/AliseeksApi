@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "Hangfire.AspNetCore": "1.6.0",
     "HtmlAgilityPack": "1.4.9.5",
     "MailKit": "1.4.2.1",
     "Microsoft.AspNetCore.Mvc": "1.0.0",
