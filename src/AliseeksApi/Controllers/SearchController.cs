@@ -21,12 +21,9 @@ namespace AliseeksApi.Controllers
         IScheduler scheduler;
         ILogger logger;
 
-        public SearchController(IAliexpressService ali, IMemoryCache cache,
-            IScheduler scheduler, ILogger<SearchController> logger)
+        public SearchController(IAliexpressService ali, ILogger<SearchController> logger)
         {
             this.ali = ali;
-            this.cache = cache;
-            this.scheduler = scheduler;
             this.logger = logger;
         }
 
@@ -35,22 +32,7 @@ namespace AliseeksApi.Controllers
         [HttpGet]
         public async Task<IEnumerable<Item>> Get([FromQuery]SearchCriteria search)
         {
-            string qs = JsonConvert.SerializeObject(search);
-            IEnumerable<Item> response;
-            if(!cache.TryGetValue<IEnumerable<Item>>(qs, out response))
-            {
-                response = await ali.SearchItems(search);
-
-                cache.Set<IEnumerable<Item>>(qs, response,
-                    new MemoryCacheEntryOptions()
-                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(5)));
-
-                logger.LogCritical("SETTING CACHE");
-            }
-            else
-            {
-                logger.LogCritical("USING CACHE");
-            }
+            var response = await ali.SearchItems(search);
 
             return response;
         }
@@ -59,19 +41,7 @@ namespace AliseeksApi.Controllers
         [Route("/api/[controller]/cache")]
         public async Task<IActionResult> Cache([FromQuery]SearchCriteria search)
         {
-            string qs = JsonConvert.SerializeObject(search);
-            IEnumerable<Item> dummy;
-            if(!cache.TryGetValue<IEnumerable<Item>>(qs, out dummy))
-            {
-                var items = await ali.SearchItems(search);
-
-                cache.Set<IEnumerable<Item>>(qs, items,
-                    new MemoryCacheEntryOptions()
-                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(5)));
-
-                logger.LogCritical("Setting cache from cache request");
-            }
-
+            await ali.CacheItems(search);
             return Ok();
         }
     }

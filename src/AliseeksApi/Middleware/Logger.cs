@@ -34,7 +34,7 @@ namespace AliseeksApi.Middleware
             sw.Start();
             await _next.Invoke(context);
             sw.Stop();
-            logger.LogInformation($"{context.Request.Path}\t{sw.Elapsed.TotalMilliseconds}(ms)");
+            logger.LogCritical($"{context.Request.Path}\t{sw.Elapsed.TotalMilliseconds}(ms)");
         }
     }
 }

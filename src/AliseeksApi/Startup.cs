@@ -11,6 +11,9 @@ using AliseeksApi.Services;
 using AliseeksApi.Utility;
 using AliseeksApi.Middleware;
 using AliseeksApi.Scheduling;
+using AliseeksApi.Storage.Redis;
+using StackExchange.Redis;
+using AliseeksApi.Storage.Cache;
 
 namespace AliseeksApi
 {
@@ -43,7 +46,7 @@ namespace AliseeksApi
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
-            loggerFactory.AddDebug();
+            loggerFactory.AddDebug(LogLevel.Warning);
 
             app.ApplyApiLogging();
 
@@ -52,6 +55,12 @@ namespace AliseeksApi
 
         void configureDependencyInjection(IServiceCollection services)
         {
+            services.AddSingleton<IConnectionMultiplexer>(new RedisConfiguration()
+                                                                    .Configure("127.0.0.1:6379")
+                                                                    .Connect());
+            services.AddScoped<IDatabase>(x => x.GetService<IConnectionMultiplexer>().GetDatabase());
+
+            services.AddTransient<IApplicationCache, ApplicationCache>();
             services.AddTransient<IAliexpressService, AliexpressService>();
             services.AddTransient<IHttpService, HttpService>();
             services.AddTransient<IScheduler, Scheduler>();
