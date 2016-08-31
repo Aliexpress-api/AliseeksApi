@@ -32,6 +32,9 @@ namespace AliseeksApi.Services
 
             await cache.StoreString(key, JsonConvert.SerializeObject(items));
 
+            int from = search.Page == null ? 2 : (int)search.Page;
+            Task.Run(() => cacheSearchPages(search, from, from + 3));
+
             return items;
         }
 
@@ -45,6 +48,22 @@ namespace AliseeksApi.Services
             var items = searchItems(search);
 
             await cache.StoreString(key, JsonConvert.SerializeObject(items));
+        }
+
+        async Task cacheSearchPages(SearchCriteria criteria, int from, int to)
+        {
+            //Create clone
+            SearchCriteria search = JsonConvert.DeserializeObject<SearchCriteria>(JsonConvert.SerializeObject(criteria));
+
+            //Cache search results for pages FROM to TO
+            for(int i = from; i != to; i++)
+            {
+                search.Page = i;
+                string key = JsonConvert.SerializeObject(search);
+                if (await cache.Exists(key)) { continue; }
+                var items = await searchItems(search);
+                await cache.StoreString(JsonConvert.SerializeObject(search), JsonConvert.SerializeObject(items));
+            }
         }
 
         async Task<IEnumerable<Item>> searchItems(SearchCriteria search)
