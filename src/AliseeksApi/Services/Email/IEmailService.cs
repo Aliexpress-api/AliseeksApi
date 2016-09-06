@@ -7,6 +7,6 @@ namespace AliseeksApi.Services.Email
 {
     public interface IEmailService
     {
-        void SendMail(string body, string subject);
+        Task SendMail(string body, string subject);
     }
 }

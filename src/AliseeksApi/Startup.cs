@@ -8,12 +8,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using AliseeksApi.Services;
+using AliseeksApi.Services.Email;
 using AliseeksApi.Utility;
 using AliseeksApi.Middleware;
 using AliseeksApi.Scheduling;
 using AliseeksApi.Storage.Redis;
 using StackExchange.Redis;
 using AliseeksApi.Storage.Cache;
+using AliseeksApi.Configuration;
 
 namespace AliseeksApi
 {
@@ -25,6 +27,7 @@ namespace AliseeksApi
                 .SetBasePath(env.ContentRootPath)
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
+                .AddJsonFile("appsecrets.json", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables();
             Configuration = builder.Build();
         }
@@ -38,6 +41,9 @@ namespace AliseeksApi
             services.AddMvc();
 
             services.AddMemoryCache();
+
+            services.AddOptions();
+            services.Configure<EmailConfig>(Configuration.GetSection("EmailConfig"));
 
             configureDependencyInjection(services);
         }
@@ -64,6 +70,7 @@ namespace AliseeksApi
             services.AddTransient<IAliexpressService, AliexpressService>();
             services.AddTransient<IHttpService, HttpService>();
             services.AddTransient<IScheduler, Scheduler>();
+            services.AddTransient<IEmailService, EmailService>();
         }
     }
 }
