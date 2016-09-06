@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -79,12 +80,20 @@ namespace AliseeksApi.Utility
 
             if (feedbackElement != null)
             {
-                item.Feedback = feedbackElement.Attributes["title"].Value;
+                string feedback = Regex.Match(feedbackElement.Attributes["title"].Value, @"\(([^\)]+)\)").Value;
+                if(feedback != "")
+                {
+                    item.Feedback = Convert.ToInt32(feedback.Replace("(", "").Replace(")", ""));
+                }
             }
 
             if (ordersElement != null)
             {
-                item.Orders = ordersElement.InnerText;
+                string orders = Regex.Match(ordersElement.InnerText, @"\(([^\)]+)\)").Value;
+                if(orders != "")
+                {
+                    item.Orders = Convert.ToInt32(orders.Replace("(", "").Replace(")", ""));
+                }
             }
 
             return item;

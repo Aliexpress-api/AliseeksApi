@@ -7,6 +7,6 @@ namespace AliseeksApi.Utility
 {
     public class AliexpressEndpoints
     {
-        public const string SearchUrl = @"http://www.aliexpress.com/wholesale?";
+        public const string SearchUrl = @"http://www.aliexpress.com/wholesale?SortType=price_asc&isUnitPrice=y&";
     }
 }

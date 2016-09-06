@@ -15,7 +15,7 @@ namespace AliseeksApi.Models
         public string ImageURL { get; set; }
         public string MobileOnly { get; set; }
         public string StoreName { get; set; }
-        public string Feedback { get; set; }
-        public string Orders { get; set; }
+        public int Feedback { get; set; }
+        public int Orders { get; set; }
     }
 }
