@@ -32,6 +32,11 @@ namespace AliseeksApi.Controllers
         [HttpGet]
         public async Task<IEnumerable<Item>> Get([FromQuery]SearchCriteria search)
         {
+            if(HttpContext.User.Identity.IsAuthenticated)
+            {
+
+            }
+
             var response = await ali.SearchItems(search);
 
             return response;

@@ -16,6 +16,10 @@ using AliseeksApi.Storage.Redis;
 using StackExchange.Redis;
 using AliseeksApi.Storage.Cache;
 using AliseeksApi.Configuration;
+using AliseeksApi.Services.User;
+using AliseeksApi.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
 
 namespace AliseeksApi
 {
@@ -43,7 +47,8 @@ namespace AliseeksApi
             services.AddMemoryCache();
 
             services.AddOptions();
-            services.Configure<EmailConfig>(Configuration.GetSection("EmailConfig"));
+            services.Configure<EmailOptions>(Configuration.GetSection("EmailOptions"));
+            services.Configure<JwtOptions>(Configuration.GetSection("JwtOptions"));
 
             configureDependencyInjection(services);
         }
@@ -55,6 +60,15 @@ namespace AliseeksApi
             loggerFactory.AddDebug(LogLevel.Warning);
 
             app.ApplyApiLogging();
+
+            var jwtOptions = app.ApplicationServices.GetService<IOptions<JwtOptions>>().Value;
+            app.UseJwtBearerAuthentication(new JwtBearerOptions()
+            {
+                AutomaticAuthenticate = true,
+                AutomaticChallenge = true,
+                AuthenticationScheme = JwtBearerDefaults.AuthenticationScheme,
+                TokenValidationParameters = AliseeksJwtAuthentication.TokenValidationParameters(jwtOptions.SecretKey)
+            });
 
             app.UseMvc();
         }
@@ -71,6 +85,8 @@ namespace AliseeksApi
             services.AddTransient<IHttpService, HttpService>();
             services.AddTransient<IScheduler, Scheduler>();
             services.AddTransient<IEmailService, EmailService>();
+            services.AddTransient<IJwtFactory, AliseeksJwtAuthentication>();
+            services.AddTransient<IUserService, UserService>();
         }
     }
 }

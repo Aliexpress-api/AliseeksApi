@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace AliseeksApi.Configuration
 {
-    public class EmailConfig
+    public class EmailOptions
     {
         public string Name { get; set; }
         public string EmailAddress { get; set; }

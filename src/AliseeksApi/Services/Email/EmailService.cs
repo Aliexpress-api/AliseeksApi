@@ -12,9 +12,9 @@ namespace AliseeksApi.Services.Email
 {
     public class EmailService : IEmailService
     {
-        EmailConfig config;
+        EmailOptions config;
 
-        public EmailService(IOptions<EmailConfig> config)
+        public EmailService(IOptions<EmailOptions> config)
         {
             this.config = config.Value;
         }

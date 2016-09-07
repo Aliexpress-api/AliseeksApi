@@ -13,6 +13,8 @@
     "Microsoft.Extensions.Logging.Console": "1.0.0",
     "Microsoft.Extensions.Logging.Debug": "1.0.0",
     "Microsoft.Extensions.Options.ConfigurationExtensions": "1.0.0",
+    "Microsoft.AspNetCore.Authentication.JwtBearer": "1.0.0",
+    "Microsoft.AspNetCore.Authentication.Cookies": "1.0.0",
     "Microsoft.NETCore.App": {
       "version": "1.0.0",
       "type": "platform"
