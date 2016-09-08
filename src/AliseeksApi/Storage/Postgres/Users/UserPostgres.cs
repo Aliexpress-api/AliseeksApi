@@ -16,11 +16,39 @@ namespace AliseeksApi.Storage.Postgres.Users
         const string userInsertColumns = "username, password, salt, email, meta";
         const string userSelectColumns = "id, username, password, salt, created_date, email, meta";
         const string userExistColumns = "username, email";
+        const string userUpdateColumns = "password, salt, email, reset, meta";
         const string userTable = "users";
 
         public UsersPostgres(IPostgresDb db)
         {
             this.db = db;
+        }
+
+        public async Task UpdateAsync(UserModel model)
+        {
+            var parameters = "@password, @salt, @email, @reset, @meta";
+            var user = new UserModel();
+            var command = new NpgsqlCommand();
+            string[] columnUpdates = userUpdateColumns.Replace(" ", "").Split(',');
+            string[] columnUpdatesParameters = parameters.Replace(" ", "").Split(',');
+            var columnUpdateCommand = new string[columnUpdates.Length];
+
+            for(int i = 0; i != columnUpdates.Length && i != columnUpdatesParameters.Length; i++)
+            {
+                columnUpdateCommand[i] = $"{columnUpdates[i]}={columnUpdatesParameters[i]}";
+            }
+
+            command.CommandText = $"UPDATE {userTable} SET {String.Join(",", columnUpdateCommand)} WHERE id=@id;";
+            command.Parameters.AddWithValue("@password", model.Password);
+            command.Parameters.AddWithValue("@salt", model.Salt);
+            command.Parameters.AddWithValue("@email", model.Email);
+            command.Parameters.AddWithValue("@reset", model.Reset);
+            command.Parameters.AddWithValue("meta", NpgsqlTypes.NpgsqlDbType.Jsonb, (model.Meta == null) ? "" : JsonConvert.SerializeObject(model.Meta));
+            command.Parameters.AddWithValue("@id", model.ID);
+
+            await db.CommandNonqueryAsync(command);
+
+            return;
         }
 
         public async Task<UserModel> Exists(UserModel model)
@@ -76,6 +104,29 @@ namespace AliseeksApi.Storage.Postgres.Users
             var command = new NpgsqlCommand();
             command.CommandText = $"SELECT {userSelectColumns} FROM {userTable} WHERE username=@username;";
             command.Parameters.AddWithValue("username", username);
+
+            int ordinal = 0;
+
+            await db.CommandReaderAsync(command, reader =>
+            {
+                user.ID = reader.GetInt32(ordinal++);
+                user.Username = reader.GetString(ordinal++);
+                user.Password = reader.GetString(ordinal++);
+                user.Salt = reader.GetString(ordinal++);
+                user.CreatedDate = reader.GetDateTime(ordinal++);
+                user.Email = reader.GetString(ordinal++);
+                user.Meta = JsonConvert.DeserializeObject<UserMetaModel>(reader.GetString(ordinal++));
+            });
+
+            return user;
+        }
+
+        public async Task<UserModel> FindByEmail(string email)
+        {
+            var user = new UserModel();
+            var command = new NpgsqlCommand();
+            command.CommandText = $"SELECT {userSelectColumns} FROM {userTable} WHERE email=@email;";
+            command.Parameters.AddWithValue("email", email);
 
             int ordinal = 0;
 

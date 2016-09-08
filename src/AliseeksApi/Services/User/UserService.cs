@@ -8,6 +8,10 @@ using System.Security.Claims;
 using AliseeksApi.Authentication;
 using AliseeksApi.Storage.Postgres.Users;
 using AliseeksApi.Exceptions.Postgres;
+using Microsoft.AspNetCore.Cryptography.KeyDerivation;
+using System.Security.Cryptography;
+using AliseeksApi.Utility.Security;
+using Microsoft.AspNetCore.Mvc;
 
 namespace AliseeksApi.Services.User
 {
@@ -15,19 +19,22 @@ namespace AliseeksApi.Services.User
     {
         IJwtFactory jwtFactory;
         IUsersPostgres db;
+        ISecurityHasher hasher;
 
-        public UserService(IJwtFactory jwtFactory, IUsersPostgres db)
+        public UserService(IJwtFactory jwtFactory, IUsersPostgres db, ISecurityHasher hasher)
         {
             this.jwtFactory = jwtFactory;
             this.db = db;
+            this.hasher = hasher;
         }
 
         public async Task<UserLoginResponse> Login(UserLoginModel model)
         {
-            //TODO: Add hashing and salting
-
             var userModel = await db.FindByUsername(model.Username);
-            if (userModel.Password != model.Password)
+
+            string hashedPassword = hasher.HashWithSalt(model.Password, userModel.Salt).Hash;
+
+            if (hashedPassword != userModel.Password)
                 return new UserLoginResponse();
 
             var claims = new Claim[]
@@ -54,8 +61,6 @@ namespace AliseeksApi.Services.User
         {
             var response = new BaseServiceResponse();
 
-            //TODO: Add hashing and salting
-
             //Convert to new User Model
             var userModel = new UserModel()
             {
@@ -67,6 +72,10 @@ namespace AliseeksApi.Services.User
                     PrimaryUse = model.PrimaryUse
                 }
             };
+
+            var hash = hasher.Hash(userModel.Password);
+            userModel.Password = hash.Hash;
+            userModel.Salt = hash.Salt;
 
             var exists = await db.Exists(userModel);
             if (exists.Email == model.Email)
@@ -94,6 +103,13 @@ namespace AliseeksApi.Services.User
         {
             var response = new BaseServiceResponse();
 
+            var user = await db.FindByEmail(model.Email);
+
+            string resetToken = hasher.Hash(model.Email).Hash;
+            user.Reset = resetToken;
+
+            await db.UpdateAsync(user);
+           
             //TODO: Reset password
             return response;
         }

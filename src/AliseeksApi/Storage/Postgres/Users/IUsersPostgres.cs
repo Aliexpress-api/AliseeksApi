@@ -10,6 +10,8 @@ namespace AliseeksApi.Storage.Postgres.Users
     {
         Task<UserModel> Exists(UserModel model);
         Task<UserModel> FindByUsername(string username);
+        Task<UserModel> FindByEmail(string email);
         Task InsertAsync(UserModel model);
+        Task UpdateAsync(UserModel model);
     }
 }

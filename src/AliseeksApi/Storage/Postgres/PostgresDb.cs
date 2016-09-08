@@ -26,19 +26,26 @@ namespace AliseeksApi.Storage.Postgres
 
         public async Task CommandReaderAsync(NpgsqlCommand command, Action<DbDataReader> func)
         {
-            using (var connection = this.Connect())
+            try
             {
-                await connection.OpenAsync();
-
-                command.Connection = connection;
-
-                using (var reader = await command.ExecuteReaderAsync())
+                using (var connection = this.Connect())
                 {
-                    while (await reader.ReadAsync())
+                    await connection.OpenAsync();
+
+                    command.Connection = connection;
+
+                    using (var reader = await command.ExecuteReaderAsync())
                     {
-                        func(reader);
+                        while (await reader.ReadAsync())
+                        {
+                            func(reader);
+                        }
                     }
                 }
+            }
+            catch(Exception e)
+            {
+
             }
         }
 
