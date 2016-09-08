@@ -10,6 +10,7 @@ using AliseeksApi.Scheduling;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System.Security.Claims;
 
 using AliseeksApi.Storage.Postgres.Users;
 
@@ -19,17 +20,12 @@ namespace AliseeksApi.Controllers
     public class SearchController : Controller
     {
         IAliexpressService ali;
-        IMemoryCache cache;
-        IScheduler scheduler;
         ILogger logger;
-        IUsersPostgres users;
 
-        public SearchController(IAliexpressService ali, ILogger<SearchController> logger,
-            IUsersPostgres users)
+        public SearchController(IAliexpressService ali, ILogger<SearchController> logger)
         {
             this.ali = ali;
             this.logger = logger;
-            this.users = users;
         }
 
         // GET api/search?[QueryString Args]
@@ -37,16 +33,11 @@ namespace AliseeksApi.Controllers
         [HttpGet]
         public async Task<IEnumerable<Item>> Get([FromQuery]SearchCriteria search)
         {
-            await users.InsertAsync(new Models.User.UserModel()
-            {
-                Username = "wakawaka54",
-                Password = "simsrock1",
-                Salt = "",
-                Email = "abello.2015@gmail.com",
-                Meta = new Models.User.UserMetaModel() { PrimaryUse = "Fun!" }
-            });
-
-            users.FindByUsername("wakawaka54");
+            if (HttpContext.User.Identity.IsAuthenticated)
+                search.Meta = new SearchCriteriaMeta()
+                {
+                    User = HttpContext.User.FindFirst(ClaimTypes.Name).Value
+                };
 
             var response = await ali.SearchItems(search);
 
@@ -57,6 +48,12 @@ namespace AliseeksApi.Controllers
         [Route("/api/[controller]/cache")]
         public async Task<IActionResult> Cache([FromQuery]SearchCriteria search)
         {
+            if (HttpContext.User.Identity.IsAuthenticated)
+                search.Meta = new SearchCriteriaMeta()
+                {
+                    User = HttpContext.User.FindFirst(ClaimTypes.Name).Value
+                };
+
             await ali.CacheItems(search);
             return Ok();
         }

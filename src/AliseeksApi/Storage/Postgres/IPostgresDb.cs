@@ -12,5 +12,6 @@ namespace AliseeksApi.Storage.Postgres
         NpgsqlConnection Connect();
         Task CommandReaderAsync(NpgsqlCommand command, Action<DbDataReader> func);
         Task CommandNonqueryAsync(NpgsqlCommand command);
+        Task TransactionAsync(Action<NpgsqlTransaction> func);
     }
 }

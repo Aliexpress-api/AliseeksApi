@@ -22,6 +22,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using AliseeksApi.Storage.Postgres;
 using AliseeksApi.Storage.Postgres.Users;
+using AliseeksApi.Storage.Postgres.Search;
 using AliseeksApi.Utility.Security;
 
 namespace AliseeksApi
@@ -91,6 +92,7 @@ namespace AliseeksApi
             //Configure Postgres
             services.AddTransient<IPostgresDb, PostgresDb>();
             services.AddTransient<IUsersPostgres, UsersPostgres>();
+            services.AddTransient<ISearchPostgres, SearchPostgres>();
 
             services.AddTransient<IApplicationCache, ApplicationCache>();
             services.AddTransient<IAliexpressService, AliexpressService>();

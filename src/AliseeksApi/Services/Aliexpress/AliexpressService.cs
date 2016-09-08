@@ -7,6 +7,9 @@ using AliseeksApi.Models.Search;
 using AliseeksApi.Utility;
 using AliseeksApi.Storage.Cache;
 using Newtonsoft.Json;
+using AliseeksApi.Storage.Postgres.Search;
+using System.Text.RegularExpressions;
+using AliseeksApi.Utility.Extensions;
 
 namespace AliseeksApi.Services
 {
@@ -14,11 +17,13 @@ namespace AliseeksApi.Services
     {
         IHttpService http;
         IApplicationCache cache;
+        ISearchPostgres db;
 
-        public AliexpressService(IHttpService http, IApplicationCache cache)
+        public AliexpressService(IHttpService http, IApplicationCache cache, ISearchPostgres db)
         {
             this.http = http;
             this.cache = cache;
+            this.db = db;
         }
 
         public async Task<IEnumerable<Item>> SearchItems(SearchCriteria search)
@@ -33,7 +38,8 @@ namespace AliseeksApi.Services
             await cache.StoreString(key, JsonConvert.SerializeObject(items));
 
             int from = search.Page == null ? 2 : (int)search.Page;
-            Task.Run(() => cacheSearchPages(search, from, from + 3));
+            AppTask.Forget(async () => await cacheSearchPages(search, from, from + 3));
+            AppTask.Forget(async () => await storeSearch(search, items));
 
             return items;
         }
@@ -48,6 +54,41 @@ namespace AliseeksApi.Services
             var items = searchItems(search);
 
             await cache.StoreString(key, JsonConvert.SerializeObject(items));
+        }
+
+        async Task storeSearch(SearchCriteria criteria, IEnumerable<Item> items)
+        {
+            var criteriaModel = new SearchHistoryModel()
+            {
+                User = criteria.Meta == null || criteria.Meta.User == null ? "Guest" : criteria.Meta.User,
+                Search = criteria.SearchText,
+                Meta = new SearchHistoryModelMeta()
+                {
+                    Criteria = criteria
+                }
+            };
+
+            var itemModels = new List<ItemModel>();
+
+            foreach(var item in items)
+            {
+                var price = item.Price.Where(x => Char.IsDigit(x) || x == '.').ToArray();
+                decimal priceConvert;
+                if(!decimal.TryParse(new String(price), out priceConvert))
+                {
+                    priceConvert = 0;
+                }
+
+                itemModels.Add(new ItemModel()
+                {
+                    ItemID = item.Name,
+                    Price = priceConvert,
+                    Quantity = 1,
+                    Seller = item.StoreName
+                });
+            }
+
+            await db.AddSearchAsync(criteriaModel, itemModels);
         }
 
         async Task cacheSearchPages(SearchCriteria criteria, int from, int to)

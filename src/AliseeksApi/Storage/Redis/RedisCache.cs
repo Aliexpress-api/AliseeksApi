@@ -10,7 +10,6 @@ namespace AliseeksApi.Storage.Redis
 {
     public class RedisCache
     {
-        ConnectionMultiplexer redis;
         RedisOptions config;
 
         public RedisCache(IOptions<RedisOptions> config)

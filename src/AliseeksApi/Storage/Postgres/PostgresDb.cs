@@ -24,6 +24,35 @@ namespace AliseeksApi.Storage.Postgres
                         Username={config.Username};Password={config.Password};Database={config.Database}");
         }
 
+        public async Task TransactionAsync(Action<NpgsqlTransaction> func)
+        {
+            try
+            {
+                using (var connection = this.Connect())
+                {
+                    await connection.OpenAsync();
+
+                    var transaction = connection.BeginTransaction();
+
+                    func(transaction);
+
+                    try
+                    {
+                        await transaction.CommitAsync();
+                    }
+                    catch(Exception e)
+                    {
+                        await transaction.RollbackAsync();
+                        throw e;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+
+            }
+        }
+
         public async Task CommandReaderAsync(NpgsqlCommand command, Action<DbDataReader> func)
         {
             try

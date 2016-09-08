@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AliseeksApi.Utility.Attributes;
+using Newtonsoft.Json;
 
 namespace AliseeksApi.Models.Search
 {
@@ -34,5 +35,13 @@ namespace AliseeksApi.Models.Search
 
         [QueryStringEncode("page")]
         public int? Page { get; set; }
+
+        [JsonIgnore]
+        public SearchCriteriaMeta Meta { get; set; }
+    }
+
+    public class SearchCriteriaMeta
+    {
+        public string User { get; set; }
     }
 }

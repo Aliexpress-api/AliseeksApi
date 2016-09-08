@@ -52,6 +52,7 @@ namespace AliseeksApi.Services.User
 
         public async Task<BaseServiceResponse> Logout(UserLogoutModel model)
         {
+            await Task.Delay(10);
             //Invalidate a token
             //TODO: Invalidate a token
             return new BaseServiceResponse();
