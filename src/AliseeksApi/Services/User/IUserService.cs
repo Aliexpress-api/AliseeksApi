@@ -9,9 +9,9 @@ namespace AliseeksApi.Services.User
 {
     public interface IUserService
     {
-        Task Register(UserNewModel model);
+        Task<BaseServiceResponse> Register(UserNewModel model);
         Task<UserLoginResponse> Login(UserLoginModel model);
-        Task Logout(UserLogoutModel model);
-        Task ResetPassword(UserResetPasswordModel model);
+        Task<BaseServiceResponse> Logout(UserLogoutModel model);
+        Task<BaseServiceResponse> ResetPassword(UserResetPasswordModel model);
     }
 }

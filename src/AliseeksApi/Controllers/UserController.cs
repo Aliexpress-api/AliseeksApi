@@ -22,17 +22,22 @@ namespace AliseeksApi.Controllers
 
         [HttpPost]
         [Route("/api/[controller]/register")]
-        public IActionResult Register([FromBody]UserNewModel model)
+        public async Task<IActionResult> Register([FromBody]UserNewModel model)
         {
-            return Ok();
+            var response = await user.Register(model);
+
+            return StatusCode(response.Code, response.Message);
         }
 
         [HttpPost]
         [Route("/api/[controller]/login")]
-        public async Task<UserLoginResponse> Login([FromBody]UserLoginModel model)
+        public async Task<IActionResult> Login([FromBody]UserLoginModel model)
         {
             var response = await user.Login(model);
-            return response;
+            if (response.Token == null)
+                return NotFound();
+
+            return Json(response);
         }
 
         [HttpPost]

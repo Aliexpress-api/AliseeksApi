@@ -11,6 +11,8 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
+using AliseeksApi.Storage.Postgres.Users;
+
 namespace AliseeksApi.Controllers
 {
     [Route("api/[controller]")]
@@ -20,11 +22,14 @@ namespace AliseeksApi.Controllers
         IMemoryCache cache;
         IScheduler scheduler;
         ILogger logger;
+        IUsersPostgres users;
 
-        public SearchController(IAliexpressService ali, ILogger<SearchController> logger)
+        public SearchController(IAliexpressService ali, ILogger<SearchController> logger,
+            IUsersPostgres users)
         {
             this.ali = ali;
             this.logger = logger;
+            this.users = users;
         }
 
         // GET api/search?[QueryString Args]
@@ -32,10 +37,16 @@ namespace AliseeksApi.Controllers
         [HttpGet]
         public async Task<IEnumerable<Item>> Get([FromQuery]SearchCriteria search)
         {
-            if(HttpContext.User.Identity.IsAuthenticated)
+            await users.InsertAsync(new Models.User.UserModel()
             {
+                Username = "wakawaka54",
+                Password = "simsrock1",
+                Salt = "",
+                Email = "abello.2015@gmail.com",
+                Meta = new Models.User.UserMetaModel() { PrimaryUse = "Fun!" }
+            });
 
-            }
+            users.FindByUsername("wakawaka54");
 
             var response = await ali.SearchItems(search);
 

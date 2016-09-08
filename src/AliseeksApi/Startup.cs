@@ -20,6 +20,8 @@ using AliseeksApi.Services.User;
 using AliseeksApi.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
+using AliseeksApi.Storage.Postgres;
+using AliseeksApi.Storage.Postgres.Users;
 
 namespace AliseeksApi
 {
@@ -49,6 +51,8 @@ namespace AliseeksApi
             services.AddOptions();
             services.Configure<EmailOptions>(Configuration.GetSection("EmailOptions"));
             services.Configure<JwtOptions>(Configuration.GetSection("JwtOptions"));
+            services.Configure<RedisOptions>(Configuration.GetSection("RedisOptions"));
+            services.Configure<PostgresOptions>(Configuration.GetSection("PostgresOptions"));
 
             configureDependencyInjection(services);
         }
@@ -75,10 +79,17 @@ namespace AliseeksApi
 
         void configureDependencyInjection(IServiceCollection services)
         {
-            services.AddSingleton<IConnectionMultiplexer>(new RedisConfiguration()
-                                                                    .Configure("127.0.0.1:6379")
-                                                                    .Connect());
+            //Intermiediate service provider with IOptions
+            var serviceProvider = services.BuildServiceProvider();
+
+            //Configure Redis Cache
+            var redisConfig = serviceProvider.GetService<IOptions<RedisOptions>>();
+            services.AddSingleton<IConnectionMultiplexer>(new RedisCache(redisConfig).Connect());
             services.AddScoped<IDatabase>(x => x.GetService<IConnectionMultiplexer>().GetDatabase());
+
+            //Configure Postgres
+            services.AddTransient<IPostgresDb, PostgresDb>();
+            services.AddTransient<IUsersPostgres, UsersPostgres>();
 
             services.AddTransient<IApplicationCache, ApplicationCache>();
             services.AddTransient<IAliexpressService, AliexpressService>();
