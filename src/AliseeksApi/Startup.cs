@@ -23,6 +23,8 @@ using AliseeksApi.Storage.Postgres;
 using AliseeksApi.Storage.Postgres.Users;
 using AliseeksApi.Storage.Postgres.Search;
 using AliseeksApi.Utility.Security;
+using AliseeksApi.Services.Logging;
+using AliseeksApi.Storage.Postgres.Logging;
 
 namespace AliseeksApi
 {
@@ -92,6 +94,7 @@ namespace AliseeksApi
             services.AddTransient<IPostgresDb, PostgresDb>();
             services.AddTransient<IUsersPostgres, UsersPostgres>();
             services.AddTransient<ISearchPostgres, SearchPostgres>();
+            services.AddTransient<ILoggingPostgres, LoggingPostgres>();
 
             services.AddTransient<IApplicationCache, ApplicationCache>();
             services.AddTransient<IAliexpressService, AliexpressService>();
@@ -99,6 +102,7 @@ namespace AliseeksApi
             services.AddTransient<IEmailService, EmailService>();
             services.AddTransient<IJwtFactory, AliseeksJwtAuthentication>();
             services.AddTransient<IUserService, UserService>();
+            services.AddTransient<IExceptionLoggingService, ExceptionLoggingService>();
 
             //Add Utilities
             services.AddTransient<ISecurityHasher, SecurityHasher>();
