@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using AliseeksApi.Models.Search;
 using AliseeksApi.Models;
 using AliseeksApi.Services;
-using AliseeksApi.Scheduling;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;

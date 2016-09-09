@@ -29,8 +29,10 @@ namespace AliseeksApi.Utility
                 object val = prop.GetValue(criteria);
                 if(val != null && encode != null)
                 {
-                    if(val.GetType() == typeof(bool)) keyvalue.Add(($"{encode.Name}={((bool)val).YesOrNo()}"));
-                    else keyvalue.Add($"{encode.Name}={val.ToString()}");
+                    var encodedValue = val.ToString().Replace(" ", "+");
+                    if (val.GetType() == typeof(bool)) encodedValue = ((bool)val).YesOrNo();
+
+                    keyvalue.Add($"{encode.Name}={encodedValue.ToString()}");
                 }
             }
 

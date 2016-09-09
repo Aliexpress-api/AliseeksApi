@@ -143,5 +143,28 @@ namespace AliseeksApi.Storage.Postgres.Users
 
             return user;
         }
+
+        public async Task<UserModel> FindByResetToken(string token)
+        {
+            var user = new UserModel();
+            var command = new NpgsqlCommand();
+            command.CommandText = $"SELECT {userSelectColumns} FROM {userTable} WHERE reset=@reset;";
+            command.Parameters.AddWithValue("reset", token);
+
+            int ordinal = 0;
+
+            await db.CommandReaderAsync(command, reader =>
+            {
+                user.ID = reader.GetInt32(ordinal++);
+                user.Username = reader.GetString(ordinal++);
+                user.Password = reader.GetString(ordinal++);
+                user.Salt = reader.GetString(ordinal++);
+                user.CreatedDate = reader.GetDateTime(ordinal++);
+                user.Email = reader.GetString(ordinal++);
+                user.Meta = JsonConvert.DeserializeObject<UserMetaModel>(reader.GetString(ordinal++));
+            });
+
+            return user;
+        }
     }
 }

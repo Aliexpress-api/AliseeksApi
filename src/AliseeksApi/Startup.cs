@@ -11,7 +11,6 @@ using AliseeksApi.Services;
 using AliseeksApi.Services.Email;
 using AliseeksApi.Utility;
 using AliseeksApi.Middleware;
-using AliseeksApi.Scheduling;
 using AliseeksApi.Storage.Redis;
 using StackExchange.Redis;
 using AliseeksApi.Storage.Cache;
@@ -97,7 +96,6 @@ namespace AliseeksApi
             services.AddTransient<IApplicationCache, ApplicationCache>();
             services.AddTransient<IAliexpressService, AliexpressService>();
             services.AddTransient<IHttpService, HttpService>();
-            services.AddTransient<IScheduler, Scheduler>();
             services.AddTransient<IEmailService, EmailService>();
             services.AddTransient<IJwtFactory, AliseeksJwtAuthentication>();
             services.AddTransient<IUserService, UserService>();

@@ -55,5 +55,13 @@ namespace AliseeksApi.Controllers
             await user.ResetPassword(model);
             return Ok();
         }
+
+        [HttpPost]
+        [Route("/api/[controller]/resetvalid")]
+        public async Task<IActionResult> ResetValid([FromBody]UserResetValidModel model)
+        {
+            await user.ResetValid(model);
+            return Ok();
+        }
     }
 }

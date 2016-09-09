@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using System.Security.Cryptography;
 using AliseeksApi.Utility.Security;
 using Microsoft.AspNetCore.Mvc;
+using AliseeksApi.Services.Email;
+using AliseeksApi.Models.Email;
 
 namespace AliseeksApi.Services.User
 {
@@ -20,12 +22,15 @@ namespace AliseeksApi.Services.User
         IJwtFactory jwtFactory;
         IUsersPostgres db;
         ISecurityHasher hasher;
+        IEmailService email;
 
-        public UserService(IJwtFactory jwtFactory, IUsersPostgres db, ISecurityHasher hasher)
+        public UserService(IJwtFactory jwtFactory, IUsersPostgres db, ISecurityHasher hasher,
+            IEmailService email)
         {
             this.jwtFactory = jwtFactory;
             this.db = db;
             this.hasher = hasher;
+            this.email = email;
         }
 
         public async Task<UserLoginResponse> Login(UserLoginModel model)
@@ -90,7 +95,7 @@ namespace AliseeksApi.Services.User
             }
             catch (PostgresDuplicateValueException e)
             {
-                //
+                //Should not get this exception
             }
             catch (Exception e)
             {
@@ -106,13 +111,45 @@ namespace AliseeksApi.Services.User
 
             var user = await db.FindByEmail(model.Email);
 
+            if (user == null) { return response; }
+
             string resetToken = hasher.Hash(model.Email).Hash;
             user.Reset = resetToken;
 
             await db.UpdateAsync(user);
-           
+
+            var resetModel = new PasswordResetModel()
+            {
+                ActionUrl = $"localhost:5220/user/reset?token={resetToken}",
+                Name = user.Username,
+                SenderName = "Alex",
+                Subject = "Password Reset",
+                ToAddress = user.Email
+            };
+
+            await email.SendPasswordResetTo(resetModel);
+
             //TODO: Reset password
             return response;
         }
+
+        public async Task<BaseServiceResponse> ResetValid(UserResetValidModel model)
+        {
+            var response = new BaseServiceResponse();
+
+            var user = await db.FindByResetToken(model.Token);
+
+            if (user == null) { return response; }
+
+            var hashed = hasher.Hash(model.NewPassword);
+            user.Password = hashed.Hash;
+            user.Salt = hashed.Salt;
+
+            await db.UpdateAsync(user);
+
+            //TODO: Reset password
+            return response;
+        }
+
     }
 }

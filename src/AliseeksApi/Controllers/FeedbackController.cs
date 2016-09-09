@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using AliseeksApi.Models;
 using AliseeksApi.Services.Email;
-using AliseeksApi.Scheduling;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -36,7 +35,7 @@ namespace AliseeksApi.Controllers
 
             string subject = "Aliseeks Feedback Received";
 
-            await email.SendMail(body, subject);
+            await email.SendMailTo(body, subject, "abello.2015@gmail.com");
 
             return Ok();
         }

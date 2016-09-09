@@ -35,8 +35,16 @@ namespace AliseeksApi.Services
 
             var items = await searchItems(search);
 
-            await cache.StoreString(key, JsonConvert.SerializeObject(items));
+            try
+            {
+                await cache.StoreString(key, JsonConvert.SerializeObject(items));
+            }
+            catch
+            {
+                //TODO: Log unable to cache expection
+            }
 
+            //Cache the next pages 2 -> 5 & Store results in Postgres
             int from = search.Page == null ? 2 : (int)search.Page;
             AppTask.Forget(async () => await cacheSearchPages(search, from, from + 3));
             AppTask.Forget(async () => await storeSearch(search, items));
