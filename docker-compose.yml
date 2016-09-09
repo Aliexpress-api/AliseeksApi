@@ -1,0 +1,14 @@
+version: '2'
+services:
+
+  postgres:
+    container_name: as_postgres
+    build: ./postgres
+    ports:
+       - "5400:5432"
+
+  redis:
+    container_name: as_redis
+    build: ./redis
+    ports:
+       - "6379:6379"
