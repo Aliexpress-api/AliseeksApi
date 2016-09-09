@@ -39,10 +39,10 @@ namespace AliseeksApi.Storage.Postgres.Users
             }
 
             command.CommandText = $"UPDATE {userTable} SET {String.Join(",", columnUpdateCommand)} WHERE id=@id;";
-            command.Parameters.AddWithValue("@password", model.Password);
-            command.Parameters.AddWithValue("@salt", model.Salt);
-            command.Parameters.AddWithValue("@email", model.Email);
-            command.Parameters.AddWithValue("@reset", model.Reset);
+            command.Parameters.AddWithValue("@password", model.Password ?? String.Empty);
+            command.Parameters.AddWithValue("@salt", model.Salt ?? String.Empty);
+            command.Parameters.AddWithValue("@email", model.Email ?? String.Empty);
+            command.Parameters.AddWithValue("@reset", model.Reset ?? String.Empty);
             command.Parameters.AddWithValue("meta", NpgsqlTypes.NpgsqlDbType.Jsonb, (model.Meta == null) ? "" : JsonConvert.SerializeObject(model.Meta));
             command.Parameters.AddWithValue("@id", model.ID);
 

@@ -60,6 +60,8 @@ namespace AliseeksApi.Controllers
         [Route("/api/[controller]/resetvalid")]
         public async Task<IActionResult> ResetValid([FromBody]UserResetValidModel model)
         {
+            //Replace spaces with '+' for encoding purposes, are there any other characters that may need to be changed?
+            model.Token = model.Token.Replace(' ', '+');
             await user.ResetValid(model);
             return Ok();
         }

@@ -37,11 +37,18 @@ namespace AliseeksApi.Services.User
         {
             var userModel = await db.FindByUsername(model.Username);
 
+            //Invalid username
+            if (userModel == null)
+                return new UserLoginResponse();
+
+            //Hash the login password with user salt
             string hashedPassword = hasher.HashWithSalt(model.Password, userModel.Salt).Hash;
 
+            //Verify if hashed password and login hashed password match
             if (hashedPassword != userModel.Password)
                 return new UserLoginResponse();
 
+            //Set security claims and encode into JWT
             var claims = new Claim[]
             {
                 new Claim(ClaimTypes.Name, model.Username)
