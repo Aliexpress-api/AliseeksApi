@@ -56,7 +56,10 @@ namespace AliseeksApi.Utility
         //Where the magic happens
         Item decodeItemnode(HtmlNode node)
         {
-            Item item = new Item();
+            Item item = new Item()
+            {
+                Source = "Aliexpress"
+            };
 
             //Get name node
 

@@ -21,6 +21,7 @@
       "version": "1.0.0",
       "type": "platform"
     },
+    "Microsoft.AspNetCore.Diagnostics": "1.0.0",
     "Microsoft.AspNetCore.Cryptography.KeyDerivation": "1.0.0",
     "StackExchange.Redis": "1.1.604-alpha",
     "Npgsql": "3.1.0-*",

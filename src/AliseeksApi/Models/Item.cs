@@ -22,6 +22,7 @@ namespace AliseeksApi.Models
         public bool TopRatedSeller { get; set; }
         public int Feedback { get; set; }
         public int Orders { get; set; }
+        public string Source { get; set; }
 
         public Item()
         {

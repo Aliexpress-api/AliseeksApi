@@ -16,6 +16,7 @@ namespace AliseeksApi.Models
         public DateTime CreatedDate { get; set; }
         public string Currency { get; set; }
         public decimal LotPrice { get; set; }
+        public string Source { get; set; }
         public ItemModelMeta Meta { get; set; }
     }
 

@@ -89,7 +89,8 @@ namespace AliseeksApi.Services
                     Seller = item.StoreName,
                     Currency = item.Currency,
                     LotPrice = item.LotPrice,
-                    Title = item.Name
+                    Title = item.Name,
+                    Source = item.Source
                 });
             }
 

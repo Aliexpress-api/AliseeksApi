@@ -13,7 +13,7 @@ namespace AliseeksApi.Storage.Postgres.Search
     {
         const string searchHistoryInsertColumns = "search, meta, username";
         const string searchHistoryTable = "searchhistory";
-        const string itemHistoryInsertColumns = "itemid, price, quantity, seller, meta, lotprice, currency, title";
+        const string itemHistoryInsertColumns = "itemid, price, quantity, seller, meta, lotprice, currency, title, source";
         const string itemHistoryTable = "itemhistory";
 
         IPostgresDb db;
@@ -39,7 +39,7 @@ namespace AliseeksApi.Storage.Postgres.Search
 
                 foreach (var item in items)
                 {
-                    var parameters = "@itemid, @price, @quantity, @seller, @meta, @lotprice, @currency, @title";
+                    var parameters = "@itemid, @price, @quantity, @seller, @meta, @lotprice, @currency, @title, @source";
                     var command = new NpgsqlCommand();
                     command.Transaction = transaction;
                     command.Connection = transaction.Connection;
@@ -54,6 +54,7 @@ namespace AliseeksApi.Storage.Postgres.Search
                     command.Parameters.AddWithValue("@lotprice", item.LotPrice);
                     command.Parameters.AddWithValue("@currency", item.Currency);
                     command.Parameters.AddWithValue("@title", item.Title);
+                    command.Parameters.AddWithValue("@source", item.Source);
 
                     command.ExecuteNonQuery();
                 }

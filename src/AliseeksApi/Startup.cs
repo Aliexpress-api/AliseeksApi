@@ -25,6 +25,7 @@ using AliseeksApi.Storage.Postgres.Search;
 using AliseeksApi.Utility.Security;
 using AliseeksApi.Services.Logging;
 using AliseeksApi.Storage.Postgres.Logging;
+using Microsoft.AspNetCore.Diagnostics;
 
 namespace AliseeksApi
 {
@@ -65,6 +66,8 @@ namespace AliseeksApi
         {
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug(LogLevel.Warning);
+
+            app.UseMiddleware<ExceptionHandler>();
 
             app.ApplyApiLogging();
 
