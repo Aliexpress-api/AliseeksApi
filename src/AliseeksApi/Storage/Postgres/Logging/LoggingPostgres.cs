@@ -12,6 +12,9 @@ namespace AliseeksApi.Storage.Postgres.Logging
         const string insertExceptionLogColumns = "criticality, message, stacktrace";
         const string exceptionLogTable = "exceptions";
 
+        const string insertActivityLogColumns = "ip, username, request";
+        const string activityLogTable = "activity";
+
         IPostgresDb db;
 
         public LoggingPostgres(IPostgresDb db)
@@ -27,6 +30,18 @@ namespace AliseeksApi.Storage.Postgres.Logging
             cmd.Parameters.AddWithValue("@criticality", model.Criticality);
             cmd.Parameters.AddWithValue("@message", model.Message);
             cmd.Parameters.AddWithValue("@stacktrace", model.StackTrace);
+
+            await db.CommandNonqueryAsync(cmd);
+        }
+
+        public async Task AddActivityLogAsync(ActivityLogModel model)
+        {
+            var cmdParameters = "@ip, @username, @request";
+            var cmd = new NpgsqlCommand();
+            cmd.CommandText = $@"INSERT INTO {activityLogTable} ({insertActivityLogColumns}) VALUES ({cmdParameters});";
+            cmd.Parameters.AddWithValue("@ip", model.IP);
+            cmd.Parameters.AddWithValue("@username", model.User);
+            cmd.Parameters.AddWithValue("@request", model.Request);
 
             await db.CommandNonqueryAsync(cmd);
         }

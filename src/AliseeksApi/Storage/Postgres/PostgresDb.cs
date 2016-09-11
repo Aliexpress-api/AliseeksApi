@@ -49,7 +49,8 @@ namespace AliseeksApi.Storage.Postgres
             }
             catch (Exception e)
             {
-
+                //Rethrow until we can find a better way to handle errors
+                throw e;
             }
         }
 
@@ -74,7 +75,8 @@ namespace AliseeksApi.Storage.Postgres
             }
             catch(Exception e)
             {
-
+                //Rethrow until we can find a better way to handle errors
+                throw e;
             }
         }
 
@@ -93,6 +95,7 @@ namespace AliseeksApi.Storage.Postgres
             }
             catch(Exception e)
             {
+                //Rethrow until we can find a better way to handle errors
                 throw e;
             }
         }

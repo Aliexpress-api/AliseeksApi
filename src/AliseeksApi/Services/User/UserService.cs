@@ -14,6 +14,7 @@ using AliseeksApi.Utility.Security;
 using Microsoft.AspNetCore.Mvc;
 using AliseeksApi.Services.Email;
 using AliseeksApi.Models.Email;
+using Microsoft.Extensions.Logging;
 
 namespace AliseeksApi.Services.User
 {
@@ -103,10 +104,12 @@ namespace AliseeksApi.Services.User
             catch (PostgresDuplicateValueException e)
             {
                 //Should not get this exception
+                throw e;
             }
             catch (Exception e)
             {
-                //Unknown exception, panic
+                //Rethrow until we can find a better way to handle errors
+                throw e;
             }
 
             return response;
@@ -136,7 +139,6 @@ namespace AliseeksApi.Services.User
 
             await email.SendPasswordResetTo(resetModel);
 
-            //TODO: Reset password
             return response;
         }
 
@@ -152,9 +154,16 @@ namespace AliseeksApi.Services.User
             user.Password = hashed.Hash;
             user.Salt = hashed.Salt;
 
-            await db.UpdateAsync(user);
+            try
+            {
+                await db.UpdateAsync(user);
+            }
+            catch(Exception e)
+            {
+                //Rethrow until we can find a better way to handle errors
+                throw e;
+            }
 
-            //TODO: Reset password
             return response;
         }
 

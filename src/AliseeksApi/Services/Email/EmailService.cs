@@ -45,7 +45,7 @@ namespace AliseeksApi.Services.Email
             }
             catch (Exception e)
             {
-                //TODO: Add Error Handling
+                throw e;
             }
         }
 

@@ -102,7 +102,7 @@ namespace AliseeksApi
             services.AddTransient<IEmailService, EmailService>();
             services.AddTransient<IJwtFactory, AliseeksJwtAuthentication>();
             services.AddTransient<IUserService, UserService>();
-            services.AddTransient<IExceptionLoggingService, ExceptionLoggingService>();
+            services.AddTransient<ILoggingService, LoggingService>();
 
             //Add Utilities
             services.AddTransient<ISecurityHasher, SecurityHasher>();

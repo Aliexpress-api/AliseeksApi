@@ -72,10 +72,9 @@ namespace AliseeksApi.Authentication
             }
             catch (Exception e)
             {
-                //TODO: Add error handling
+                //Rethrow errors until a better error hanlding can be done
+                throw e;
             }
-
-            return "";
         }
     }
 }

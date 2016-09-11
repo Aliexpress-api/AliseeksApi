@@ -9,5 +9,6 @@ namespace AliseeksApi.Storage.Postgres.Logging
     public interface ILoggingPostgres
     {
         Task AddExceptionLogAsync(ExceptionLogModel model);
+        Task AddActivityLogAsync(ActivityLogModel model);
     }
 }

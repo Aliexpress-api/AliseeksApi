@@ -19,10 +19,10 @@ namespace AliseeksApi.Controllers
     public class LoggingController : Controller
     {
         IEmailService email;
-        IExceptionLoggingService errors;
+        ILoggingService errors;
         ILogger<LoggingController> logger;
 
-        public LoggingController(IEmailService email, IExceptionLoggingService errors,
+        public LoggingController(IEmailService email, ILoggingService errors,
             ILogger<LoggingController> logger)
         {
             this.email = email;
@@ -44,5 +44,14 @@ namespace AliseeksApi.Controllers
 
             return Ok();
         }
+
+        [HttpPost("Activity")]
+        public async Task<IActionResult> Activity([FromBody]ActivityLogModel model)
+        {
+            await errors.LogActivity(model);
+
+            return Ok();
+        }
+
     }
 }

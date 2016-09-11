@@ -64,6 +64,7 @@ namespace AliseeksApi.Services
             await cache.StoreString(key, JsonConvert.SerializeObject(items));
         }
 
+        //Store Search in DB
         async Task storeSearch(SearchCriteria criteria, IEnumerable<Item> items)
         {
             var criteriaModel = new SearchHistoryModel()
@@ -80,23 +81,26 @@ namespace AliseeksApi.Services
 
             foreach(var item in items)
             {
-                var price = item.Price.Where(x => Char.IsDigit(x) || x == '.').ToArray();
-                decimal priceConvert;
-                if(!decimal.TryParse(new String(price), out priceConvert))
-                {
-                    priceConvert = 0;
-                }
-
                 itemModels.Add(new ItemModel()
                 {
-                    ItemID = item.Name,
-                    Price = priceConvert,
-                    Quantity = 1,
-                    Seller = item.StoreName
+                    ItemID = item.ItemID,
+                    Price = item.Price,
+                    Quantity = item.Quantity,
+                    Seller = item.StoreName,
+                    Currency = item.Currency,
+                    LotPrice = item.LotPrice,
+                    Title = item.Name
                 });
             }
 
-            await db.AddSearchAsync(criteriaModel, itemModels);
+            try
+            {
+                await db.AddSearchAsync(criteriaModel, itemModels);
+            }
+            catch
+            {
+                //TODO: Log this as a warning
+            }
         }
 
         async Task cacheSearchPages(SearchCriteria criteria, int from, int to)
@@ -115,6 +119,7 @@ namespace AliseeksApi.Services
             }
         }
 
+        //Function that actually goes out and gets Aliexpress search and converts it
         async Task<IEnumerable<Item>> searchItems(SearchCriteria search)
         {
             string qs = new AliSearchEncoder().CreateQueryString(search);

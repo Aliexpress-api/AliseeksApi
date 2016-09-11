@@ -6,8 +6,9 @@ using AliseeksApi.Models.Logging;
 
 namespace AliseeksApi.Services.Logging
 {
-    public interface IExceptionLoggingService
+    public interface ILoggingService
     {
         Task LogException(ExceptionLogModel model);
+        Task LogActivity(ActivityLogModel model);
     }
 }

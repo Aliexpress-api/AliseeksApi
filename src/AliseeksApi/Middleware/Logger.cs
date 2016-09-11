@@ -30,11 +30,12 @@ namespace AliseeksApi.Middleware
 
         public async Task Invoke(HttpContext context)
         {
+            logger.LogInformation($"{context.Request.Path}\tRECEIVED");
             var sw = new Stopwatch();
             sw.Start();
             await _next.Invoke(context);
             sw.Stop();
-            logger.LogCritical($"{context.Request.Path}\t{sw.Elapsed.TotalMilliseconds}(ms)");
+            logger.LogInformation($"{context.Request.Path}\t{sw.Elapsed.TotalMilliseconds}(ms)");
         }
     }
 }

@@ -7,13 +7,18 @@ using AliseeksApi.Storage.Postgres.Logging;
 
 namespace AliseeksApi.Services.Logging
 {
-    public class ExceptionLoggingService : IExceptionLoggingService
+    public class LoggingService : ILoggingService
     {
         ILoggingPostgres db;
 
-        public ExceptionLoggingService(ILoggingPostgres db)
+        public LoggingService(ILoggingPostgres db)
         {
             this.db = db;
+        }
+
+        public async Task LogActivity(ActivityLogModel model)
+        {
+            await db.AddActivityLogAsync(model);
         }
 
         public async Task LogException(ExceptionLogModel model)

@@ -27,7 +27,8 @@ namespace AliseeksApi.Tests.Services
                 {
                     new object[] { new SearchCriteria() { SearchText = "40mm 12V" } },
                     new object[] { new SearchCriteria() { SearchText = "PTFE", Page = 2 } },
-                    new object[] { new SearchCriteria() { SearchText = "PTFE", Page = 2, PriceFrom=2 } }
+                    new object[] { new SearchCriteria() { SearchText = "PTFE", Page = 2, PriceFrom=2 } },
+                    new object[] { new SearchCriteria() {  SearchText = "wire"} }
                 };
             }
         }
@@ -51,7 +52,7 @@ namespace AliseeksApi.Tests.Services
             moqCache.ResetCalls();
 
             var results = await service.SearchItems(criteria);
-            Assert.True(results.Count() != 0);
+            Assert.True(results.Count() != 0, $"Did not return any results for search criteria {criteria.SearchText}");
             moqCache.Verify(x => x.StoreString(It.IsAny<string>(), It.IsAny<string>()), Times.AtLeastOnce());
         }
 
