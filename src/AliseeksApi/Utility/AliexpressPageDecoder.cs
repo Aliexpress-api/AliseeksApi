@@ -23,6 +23,9 @@ namespace AliseeksApi.Utility
         //Matches all decimal numbers with OPTIONAL decimal point
         const string lotPriceStringRegex = @"\d+\.?\d*";
 
+        //Matches all decimal numbers with OPTIONAL decimal point
+        const string shippingPriceStringRegex = @"\d+\.?\d*";
+
         public List<Item> DecodePage(string html)
         {
             try
@@ -111,6 +114,14 @@ namespace AliseeksApi.Utility
             </span>
              */
             var lotPriceElement = node.GetNodesByCssClass("lot-price");
+
+            /*
+             <dd class="price">
+            	<span class="value">US $0.15</span> <span class="separator">/</span>
+            	<span class="unit"> lot</span> via Fedex IE     
+             </dd>
+             */
+            var shippingPriceElement = node.Descendants().FirstOrDefault(x => x.Name == "dd" && x.Attributes.Contains("class") && x.Attributes["class"].Value == "price");
 
             if (nameElement != null)
             {
@@ -235,6 +246,25 @@ namespace AliseeksApi.Utility
             {
                 item.ItemID = "";
                 //TODO: Log this as a warning
+            }
+
+            if(shippingPriceElement != null)
+            {
+                //Get the first element that has [itemprop=price]
+                var shippingPriceString = priceElement.GetNodesByCssClass("value").InnerText;
+                var shippingPriceRegex = Regex.Match(shippingPriceString, shippingPriceStringRegex);
+
+                decimal shippingPriceDecimal = 0;
+                if (!decimal.TryParse(shippingPriceRegex.Value.ToString(), out shippingPriceDecimal))
+                {
+                    //TODO: Log this as a warning
+                }
+
+                item.ShippingPrice = shippingPriceDecimal;
+            }
+            else
+            {
+                item.ShippingPrice = 0;
             }
 
             return item;

@@ -13,6 +13,7 @@ namespace AliseeksApi.Models
         public string Currency { get; set; }
         public decimal[] Price { get; set; }
         public decimal LotPrice { get; set; }
+        public decimal ShippingPrice { get; set; }
         public string Unit { get; set; }
         public int Quantity { get; set; }
         public bool FreeShipping { get; set; }

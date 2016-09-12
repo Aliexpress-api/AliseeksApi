@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using AliseeksApi.Storage.Postgres.Search;
 using System.Text.RegularExpressions;
 using AliseeksApi.Utility.Extensions;
+using AliseeksApi.Storage.Postgres.Logging;
 
 namespace AliseeksApi.Services
 {
@@ -31,7 +32,10 @@ namespace AliseeksApi.Services
             //Check for cached item list
             string key = JsonConvert.SerializeObject(search);
             if (await cache.Exists(key))
-                return JsonConvert.DeserializeObject<IEnumerable<Item>>(await cache.GetString(key));
+            {
+                AppTask.Forget(async () => await storeSearch(search, new List<Item>()));
+                return JsonConvert.DeserializeObject<Item[]>(await cache.GetString(key));
+            }
 
             var items = await searchItems(search);
 
@@ -59,7 +63,7 @@ namespace AliseeksApi.Services
             if (await cache.Exists(key))
                 return;
 
-            var items = searchItems(search);
+            var items = await searchItems(search);
 
             await cache.StoreString(key, JsonConvert.SerializeObject(items));
         }
@@ -97,6 +101,29 @@ namespace AliseeksApi.Services
             try
             {
                 await db.AddSearchAsync(criteriaModel, itemModels);
+            }
+            catch
+            {
+                //TODO: Log this as a warning
+            }
+        }
+
+        //Store Search in DB if we took the search from the cache
+        async Task storeSearchCached(SearchCriteria criteria)
+        {
+            var criteriaModel = new SearchHistoryModel()
+            {
+                User = criteria.Meta == null || criteria.Meta.User == null ? "Guest" : criteria.Meta.User,
+                Search = criteria.SearchText,
+                Meta = new SearchHistoryModelMeta()
+                {
+                    Criteria = criteria
+                }
+            };
+
+            try
+            {
+                await db.AddSearchAsync(criteriaModel, null);
             }
             catch
             {
