@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using StackExchange.Redis;
 using Microsoft.Extensions.Options;
 using AliseeksApi.Configuration;
+using System.Net;
+using System.Text.RegularExpressions;
 
 namespace AliseeksApi.Storage.Redis
 {
@@ -19,7 +21,26 @@ namespace AliseeksApi.Storage.Redis
 
         public ConnectionMultiplexer Connect()
         {
-            return ConnectionMultiplexer.Connect($"{config.Host}:{config.Port}");
+            var connectionString = $"{config.Host}:{config.Port}";
+            ConfigurationOptions configOptions = ConfigurationOptions.Parse(connectionString);
+            DnsEndPoint addressEndpoint = configOptions.EndPoints.First() as DnsEndPoint;
+            int port = addressEndpoint.Port;
+
+            bool isIp = isIpAddress(addressEndpoint.Host);
+            if(!isIp)
+            {
+                IPHostEntry ip = Dns.GetHostEntryAsync(addressEndpoint.Host).Result;
+                configOptions.EndPoints.Remove(addressEndpoint);
+                configOptions.EndPoints.Add(ip.AddressList.First(), port);
+            }
+
+            return ConnectionMultiplexer.Connect(configOptions);
+        }
+
+        bool isIpAddress(string host)
+        {
+            string ipPattern = @"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b";
+            return Regex.IsMatch(host, ipPattern);
         }
     }
 }
