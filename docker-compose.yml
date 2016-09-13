@@ -1,16 +1,19 @@
 version: '2'
 services:
 
+  api:
+    container_name: as_api
+    build: ./src/AliseeksApi
+    ports:
+      - "1460:1460"
+    links:
+      - postgres
+      - redis
+
   postgres:
     container_name: as_postgres
     build: ./postgres
-    volumes:
-      - data:/var/lib/postgresql/data
-    ports:
-       - "5400:5432"
 
   redis:
     container_name: as_redis
     build: ./redis
-    ports:
-       - "6379:6379"
