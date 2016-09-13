@@ -11,6 +11,7 @@ using AliseeksApi.Storage.Postgres.Search;
 using System.Text.RegularExpressions;
 using AliseeksApi.Utility.Extensions;
 using AliseeksApi.Storage.Postgres.Logging;
+using AliseeksApi.Models.Aliexpress;
 
 namespace AliseeksApi.Services
 {
@@ -27,14 +28,14 @@ namespace AliseeksApi.Services
             this.db = db;
         }
 
-        public async Task<IEnumerable<Item>> SearchItems(SearchCriteria search)
+        public async Task<SearchResultOverview> SearchItems(SearchCriteria search)
         {
             //Check for cached item list
             string key = JsonConvert.SerializeObject(search);
             if (await cache.Exists(key))
             {
                 AppTask.Forget(async () => await storeSearch(search, new List<Item>()));
-                return JsonConvert.DeserializeObject<Item[]>(await cache.GetString(key));
+                return JsonConvert.DeserializeObject<SearchResultOverview>(await cache.GetString(key));
             }
 
             var items = await searchItems(search);
@@ -51,7 +52,7 @@ namespace AliseeksApi.Services
             //Cache the next pages 2 -> 5 & Store results in Postgres
             int from = search.Page == null ? 2 : (int)search.Page;
             AppTask.Forget(async () => await cacheSearchPages(search, from, from + 3));
-            AppTask.Forget(async () => await storeSearch(search, items));
+            AppTask.Forget(async () => await storeSearch(search, items.Items));
 
             return items;
         }
@@ -148,7 +149,7 @@ namespace AliseeksApi.Services
         }
 
         //Function that actually goes out and gets Aliexpress search and converts it
-        async Task<IEnumerable<Item>> searchItems(SearchCriteria search)
+        async Task<SearchResultOverview> searchItems(SearchCriteria search)
         {
             string qs = new AliSearchEncoder().CreateQueryString(search);
             string endpoint = AliexpressEndpoints.SearchUrl + qs;

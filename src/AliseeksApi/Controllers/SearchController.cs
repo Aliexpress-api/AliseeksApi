@@ -40,7 +40,9 @@ namespace AliseeksApi.Controllers
 
             var response = await ali.SearchItems(search);
 
-            return response;
+            HttpContext.Response.Headers.Add("X-TOTAL-COUNT", response.SearchCount.ToString());
+
+            return response.Items;
         }
 
         [HttpGet]

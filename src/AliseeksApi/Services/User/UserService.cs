@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Mvc;
 using AliseeksApi.Services.Email;
 using AliseeksApi.Models.Email;
 using Microsoft.Extensions.Logging;
+using AliseeksApi.Utility.Extensions;
 
 namespace AliseeksApi.Services.User
 {
@@ -111,6 +112,13 @@ namespace AliseeksApi.Services.User
                 //Rethrow until we can find a better way to handle errors
                 throw e;
             }
+
+            AppTask.Forget(() =>  email.SendWelcomeTo(new WelcomeModel()
+                {
+                    Address = userModel.Email,
+                    Subject = "Welcome to Aliseeks",
+                    User = userModel.Username
+                }));
 
             return response;
         }

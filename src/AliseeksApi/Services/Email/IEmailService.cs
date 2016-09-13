@@ -10,5 +10,6 @@ namespace AliseeksApi.Services.Email
     {
         Task SendMailTo(string body, string subject, string address);
         Task SendPasswordResetTo(PasswordResetModel model);
+        Task SendWelcomeTo(WelcomeModel model);
     }
 }

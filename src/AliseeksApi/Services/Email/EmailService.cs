@@ -17,6 +17,7 @@ namespace AliseeksApi.Services.Email
     {
         EmailOptions config;
         const string templatePasswordReset = "\\Views\\Templates\\Email\\PasswordReset.html";
+        const string templateWelcome = "\\Views\\Templates\\Email\\Welcome.html";
 
         public EmailService(IOptions<EmailOptions> config)
         {
@@ -41,6 +42,26 @@ namespace AliseeksApi.Services.Email
                     template = template.Replace("{{sender_name}}", "Alex");
 
                     await sendMail(template, model.Subject, model.ToAddress);
+                }
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+        }
+
+        public async Task SendWelcomeTo(WelcomeModel model)
+        {
+            try
+            {
+                using (var stream = new StreamReader(File.OpenRead(Directory.GetCurrentDirectory() + templateWelcome)))
+                {
+                    var template = stream.ReadToEnd();
+                    template = template.Replace("{{product_name}}", "Aliseeks");
+                    template = template.Replace("{{name}}", model.User);
+                    template = template.Replace("{{sender_name}}", "Alex");
+
+                    await sendMail(template, model.Subject, model.Address);
                 }
             }
             catch (Exception e)

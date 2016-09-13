@@ -52,7 +52,7 @@ namespace AliseeksApi.Tests.Services
             moqCache.ResetCalls();
 
             var results = await service.SearchItems(criteria);
-            Assert.True(results.Count() != 0, $"Did not return any results for search criteria {criteria.SearchText}");
+            Assert.True(results.Items.Count() != 0, $"Did not return any results for search criteria {criteria.SearchText}");
             moqCache.Verify(x => x.StoreString(It.IsAny<string>(), It.IsAny<string>()), Times.AtLeastOnce());
         }
 
