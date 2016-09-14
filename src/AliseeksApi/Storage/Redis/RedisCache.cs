@@ -21,7 +21,7 @@ namespace AliseeksApi.Storage.Redis
 
         public ConnectionMultiplexer Connect()
         {
-            var connectionString = $"{config.Host}:{config.Port}";
+            var connectionString = $"{config.Host}:{config.Port},password={config.Password}";
             ConfigurationOptions configOptions = ConfigurationOptions.Parse(connectionString);
             DnsEndPoint addressEndpoint = configOptions.EndPoints.First() as DnsEndPoint;
 
