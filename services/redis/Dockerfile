@@ -1,2 +1,3 @@
 FROM redis
-# COPY postgres.sql /docker-entrypoint-initdb.d/
+COPY redis.conf /usr/local/etc/redis/redis.conf
+CMD [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
