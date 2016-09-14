@@ -4,8 +4,8 @@ services:
   api:
     container_name: as_api
     build: ./src/AliseeksApi/bin/Release/netcoreapp1.0/publish
-#    ports:
-#      - "1460:1460"
+    ports:
+      - "1460:1460"
     links:
       - postgres
       - redis
@@ -13,6 +13,10 @@ services:
   postgres:
     container_name: as_postgres
     build: ./postgres
+    ports:
+       - "5432:5432"
+    environment:
+       - POSTGRES_PASSWORD
     volumes:
        - /var/lib/aliseeks/postgres/data:/var/lib/postgresql/data
 
