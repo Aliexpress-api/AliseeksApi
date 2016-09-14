@@ -4,10 +4,10 @@ COPY . /app
 
 WORKDIR /app
 
-RUN ["dotnet", "restore"]
+#RUN ["dotnet", "restore"]
 
-RUN ["dotnet", "build"]
+#RUN ["dotnet", "build"]
 
 EXPOSE 1460/tcp
 
-ENTRYPOINT ["dotnet", "run", "--server.urls", "http://*:1460"]
+ENTRYPOINT ["dotnet", "AliseeksApi.dll", "--server.urls", "http://*:1460"]
