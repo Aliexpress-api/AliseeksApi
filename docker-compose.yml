@@ -2,24 +2,30 @@ version: '2'
 services:
 
   api:
+    env_file:
+       - vars.env
     container_name: as_api
     build: ./src/AliseeksApi/bin/Release/netcoreapp1.0/publish
     ports:
-      - "1460:1460"
+      - "${ALISEEKSAPI_PORTMAP}:${ALISEEKSAPI_PORT}"
     links:
       - postgres
       - redis
 
   postgres:
     container_name: as_postgres
-    build: ./postgres
+    build: ./services/postgres
     ports:
        - "5432:5432"
     environment:
        - POSTGRES_PASSWORD
     volumes:
        - /var/lib/aliseeks/postgres/data:/var/lib/postgresql/data
+    env_file:
+       - vars.env
 
   redis:
     container_name: as_redis
-    build: ./redis
+    build: ./services/redis
+    env_file:
+       - vars.env
