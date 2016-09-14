@@ -38,7 +38,9 @@ namespace AliseeksApi
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
                 .AddJsonFile("appsecrets.json", optional: true, reloadOnChange: true)
-                .AddEnvironmentVariables();
+                .AddEnvironmentVariables("ALISEEKS_")
+                .AddEnvironmentVariables("ALISEEKSAPI_");
+
             Configuration = builder.Build();
         }
 

@@ -24,14 +24,17 @@ namespace AliseeksApi.Storage.Redis
             var connectionString = $"{config.Host}:{config.Port}";
             ConfigurationOptions configOptions = ConfigurationOptions.Parse(connectionString);
             DnsEndPoint addressEndpoint = configOptions.EndPoints.First() as DnsEndPoint;
-            int port = addressEndpoint.Port;
 
-            bool isIp = isIpAddress(addressEndpoint.Host);
-            if(!isIp)
+            if(addressEndpoint != null)
             {
-                IPHostEntry ip = Dns.GetHostEntryAsync(addressEndpoint.Host).Result;
-                configOptions.EndPoints.Remove(addressEndpoint);
-                configOptions.EndPoints.Add(ip.AddressList.First(), port);
+                int port = addressEndpoint.Port;
+                bool isIp = isIpAddress(addressEndpoint.Host);
+                if (!isIp)
+                {
+                    IPHostEntry ip = Dns.GetHostEntryAsync(addressEndpoint.Host).Result;
+                    configOptions.EndPoints.Remove(addressEndpoint);
+                    configOptions.EndPoints.Add(ip.AddressList.First(), port);
+                }
             }
 
             return ConnectionMultiplexer.Connect(configOptions);

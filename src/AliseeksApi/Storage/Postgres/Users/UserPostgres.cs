@@ -100,7 +100,7 @@ namespace AliseeksApi.Storage.Postgres.Users
 
         public async Task<UserModel> FindByUsername(string username)
         {
-            var user = new UserModel();
+            UserModel user = null;
             var command = new NpgsqlCommand();
             command.CommandText = $"SELECT {userSelectColumns} FROM {userTable} WHERE username=@username;";
             command.Parameters.AddWithValue("username", username);
@@ -109,6 +109,7 @@ namespace AliseeksApi.Storage.Postgres.Users
 
             await db.CommandReaderAsync(command, reader =>
             {
+                user = new UserModel();
                 user.ID = reader.GetInt32(ordinal++);
                 user.Username = reader.GetString(ordinal++);
                 user.Password = reader.GetString(ordinal++);

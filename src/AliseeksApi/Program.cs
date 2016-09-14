@@ -17,7 +17,8 @@ namespace AliseeksApi
             var config = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("hosting.json", optional: true)
-                .AddEnvironmentVariables()
+                .AddEnvironmentVariables("ALISEEKS_")
+                .AddEnvironmentVariables("ALISEEKSAPI_")
                 .Build();
 
             var host = new WebHostBuilder()

@@ -11,5 +11,6 @@ namespace AliseeksApi.Configuration
         public string EmailAddress { get; set; }
         public string ElasticmailUsername { get; set; }
         public string ElasticmailSecret { get; set; }
+        public bool SendEmail { get; set; }
     }
 }

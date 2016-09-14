@@ -72,6 +72,8 @@ namespace AliseeksApi.Services.Email
 
         async Task sendMail(string body, string subject, string address)
         {
+            if (!config.SendEmail) { return; }
+
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress(config.Name, config.EmailAddress));
             message.To.Add(new MailboxAddress(config.Name, address));
