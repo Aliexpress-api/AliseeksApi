@@ -27,5 +27,7 @@ services:
   redis:
     container_name: as_redis
     build: ./services/redis
+    ports:
+       - "6379:6379"
     env_file:
        - vars.env
