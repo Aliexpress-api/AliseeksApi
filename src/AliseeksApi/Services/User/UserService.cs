@@ -37,6 +37,10 @@ namespace AliseeksApi.Services.User
 
         public async Task<UserLoginResponse> Login(UserLoginModel model)
         {
+            if (model.Username == null || model.Password == null)
+                return new UserLoginResponse();
+            model.Username = model.Username.ToLower();
+
             var userModel = await db.FindByUsername(model.Username.ToLower());
 
             //Invalid username
@@ -53,7 +57,7 @@ namespace AliseeksApi.Services.User
             //Set security claims and encode into JWT
             var claims = new Claim[]
             {
-                new Claim(ClaimTypes.Name, model.Username)
+                new Claim(ClaimTypes.Name, model.Username.ToLower())
             };
 
             var response = new UserLoginResponse()
@@ -75,13 +79,16 @@ namespace AliseeksApi.Services.User
         public async Task<BaseServiceResponse> Register(UserNewModel model)
         {
             var response = new BaseServiceResponse();
+            if(model.Username == null || model.Password == null || model.Email == null) { return response; }
+            model.Username = model.Username.ToLower();
+            model.Email = model.Email.ToLower();
 
             //Convert to new User Model
             var userModel = new UserModel()
             {
                 Username = model.Username.ToLower(),
                 Password = model.Password,
-                Email = model.Email,
+                Email = model.Email.ToLower(),
                 Meta = new UserMetaModel()
                 {
                     PrimaryUse = model.PrimaryUse
@@ -95,7 +102,7 @@ namespace AliseeksApi.Services.User
             var exists = await db.Exists(userModel);
             if (exists.Email == model.Email)
                 return new BaseServiceResponse() { Code = 409, Message = "Email already in use" };
-            else if (exists.Username == model.Username)
+            else if (exists.Username.ToLower() == model.Username.ToLower())
                 return new BaseServiceResponse() { Code = 409, Message = "Username already in use" };
 
             try
@@ -126,8 +133,9 @@ namespace AliseeksApi.Services.User
         public async Task<BaseServiceResponse> ResetPassword(UserResetPasswordModel model)
         {
             var response = new BaseServiceResponse();
+            if(model.Email == null) { return response; }
 
-            var user = await db.FindByEmail(model.Email);
+            var user = await db.FindByEmail(model.Email.ToLower());
 
             if (user == null) { return response; }
 
