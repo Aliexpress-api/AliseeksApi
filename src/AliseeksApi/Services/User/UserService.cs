@@ -100,9 +100,9 @@ namespace AliseeksApi.Services.User
             userModel.Salt = hash.Salt;
 
             var exists = await db.Exists(userModel);
-            if (exists != null && exists.Email == model.Email)
+            if (exists.Email == model.Email)
                 return new BaseServiceResponse() { Code = 409, Message = "Email already in use" };
-            else if (exists != null && exists.Username.ToLower() == model.Username.ToLower())
+            else if (exists.Username == model.Username)
                 return new BaseServiceResponse() { Code = 409, Message = "Username already in use" };
 
             try
