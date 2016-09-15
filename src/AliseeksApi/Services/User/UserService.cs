@@ -37,7 +37,7 @@ namespace AliseeksApi.Services.User
 
         public async Task<UserLoginResponse> Login(UserLoginModel model)
         {
-            var userModel = await db.FindByUsername(model.Username);
+            var userModel = await db.FindByUsername(model.Username.ToLower());
 
             //Invalid username
             if (userModel == null)
@@ -79,7 +79,7 @@ namespace AliseeksApi.Services.User
             //Convert to new User Model
             var userModel = new UserModel()
             {
-                Username = model.Username,
+                Username = model.Username.ToLower(),
                 Password = model.Password,
                 Email = model.Email,
                 Meta = new UserMetaModel()
