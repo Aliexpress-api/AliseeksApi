@@ -10,20 +10,25 @@ using MimeKit.Text;
 using AliseeksApi.Configuration;
 using AliseeksApi.Models.Email;
 using System.IO;
+using AliseeksApi.Models.Logging;
+using AliseeksApi.Services.Logging;
 
 namespace AliseeksApi.Services.Email
 {
     public class EmailService : IEmailService
     {
         EmailOptions config;
+        LoggingService logging;
+
         //const string templatePasswordReset = @"\Views\Templates\Email\PasswordReset.html";
         string templatePasswordReset = Directory.GetCurrentDirectory() + Path.Combine(new string[] { Directory.GetCurrentDirectory(), "Views", "Templates", "Email", "PasswordReset.html" });
         string templateWelcome = Path.Combine(new string[] {Directory.GetCurrentDirectory(), "Views", "Templates", "Email", "Welcome.html" });
         //string templateWelcome = @"\Views\Templates\Email\Welcome.html";
 
-        public EmailService(IOptions<EmailOptions> config)
+        public EmailService(IOptions<EmailOptions> config, ILoggingService logging)
         {
             this.config = config.Value;
+            this.logging = logging;
         }
 
         public async Task SendMailTo(string body, string subject, string address)
@@ -88,15 +93,29 @@ namespace AliseeksApi.Services.Email
 
             using (var client = new SmtpClient())
             {
-                await client.ConnectAsync("smtp.elasticemail.com", 2525, false);
+                try
+                {
+                    await client.ConnectAsync("smtp.elasticemail.com", 2525, false);
 
-                client.AuthenticationMechanisms.Remove("XOAUTH2");
+                    client.AuthenticationMechanisms.Remove("XOAUTH2");
 
-                await client.AuthenticateAsync(config.ElasticmailUsername, config.ElasticmailSecret);
+                    await client.AuthenticateAsync(config.ElasticmailUsername, config.ElasticmailSecret);
 
-                await client.SendAsync(message);
+                    await client.SendAsync(message);
 
-                client.Disconnect(true);
+                    client.Disconnect(true);
+                }
+                catch(Exception e)
+                {
+                    var model = new ExceptionLogModel()
+                    {
+                        Message = e.Message + $" {config.ElasticmailUsername} {config.ElasticmailSecret}",
+                        Criticality = 10,
+                        StackTrace = e.StackTrace
+                    };
+
+                    await logging.LogException(model);
+                }
             }
         }
     }
