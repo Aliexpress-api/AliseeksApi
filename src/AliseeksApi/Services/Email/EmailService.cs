@@ -12,6 +12,8 @@ using AliseeksApi.Models.Email;
 using System.IO;
 using AliseeksApi.Models.Logging;
 using AliseeksApi.Services.Logging;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 
 namespace AliseeksApi.Services.Email
 {
@@ -95,6 +97,7 @@ namespace AliseeksApi.Services.Email
             {
                 try
                 {
+                    client.ServerCertificateValidationCallback = BypassValidateServerCertificate;
                     await client.ConnectAsync("smtp.elasticemail.com", 2525, false);
 
                     client.AuthenticationMechanisms.Remove("XOAUTH2");
@@ -117,6 +120,16 @@ namespace AliseeksApi.Services.Email
                     await logging.LogException(model);
                 }
             }
+        }
+
+        // The following method is invoked by the RemoteCertificateValidationDelegate.
+        public static bool BypassValidateServerCertificate(
+              object sender,
+              X509Certificate certificate,
+              X509Chain chain,
+              SslPolicyErrors sslPolicyErrors)
+        {
+            return true;
         }
     }
 }
