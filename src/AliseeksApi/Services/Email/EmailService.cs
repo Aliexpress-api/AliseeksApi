@@ -16,8 +16,10 @@ namespace AliseeksApi.Services.Email
     public class EmailService : IEmailService
     {
         EmailOptions config;
-        const string templatePasswordReset = "\\Views\\Templates\\Email\\PasswordReset.html";
-        const string templateWelcome = "\\Views\\Templates\\Email\\Welcome.html";
+        //const string templatePasswordReset = @"\Views\Templates\Email\PasswordReset.html";
+        string templatePasswordReset = Directory.GetCurrentDirectory() + Path.Combine(new string[] { Directory.GetCurrentDirectory(), "Views", "Templates", "Email", "PasswordReset.html" });
+        string templateWelcome = Path.Combine(new string[] {Directory.GetCurrentDirectory(), "Views", "Templates", "Email", "Welcome.html" });
+        //string templateWelcome = @"\Views\Templates\Email\Welcome.html";
 
         public EmailService(IOptions<EmailOptions> config)
         {
