@@ -6,14 +6,13 @@ using Microsoft.AspNetCore.TestHost;
 using System.Net.Http;
 using Microsoft.AspNetCore.Hosting;
 using Xunit;
-using AliseeksApi.UnitTests.Utility;
 using Microsoft.AspNetCore.Http;
 
-namespace AliseeksApi.UnitTests.Controllers
+namespace AliseeksApi.IntegrationTests.Controllers
 {
     public class SearchControllerTest
     {
-        const string searchEndpoint = ApiEndpoints.Search;
+        const string searchEndpoint = Endpoints.Search;
 
         private readonly TestServer _server;
         private readonly HttpClient _client;

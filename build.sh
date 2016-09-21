@@ -9,7 +9,7 @@ if [ -d $artifactsFolder ]; then
   rm -R $artifactsFolder
 fi
 
-cd src/AliseeksApi
+cd tests/AliseeksApi.UnitTests
 
 dotnet --info
 

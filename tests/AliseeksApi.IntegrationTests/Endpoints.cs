@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace AliseeksApi.UnitTests.Utility
+namespace AliseeksApi.IntegrationTests
 {
-    public class ApiEndpoints
+    public class Endpoints
     {
         public const string Prefix = "/api";
 
