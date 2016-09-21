@@ -12,17 +12,17 @@ services:
       - postgres
       - redis
 
-  postgres:
-    container_name: as_postgres
-    build: ./services/postgres
-    ports:
-       - "5432:5432"
-    environment:
-       - POSTGRES_PASSWORD
-    volumes:
-       - /var/lib/aliseeks/postgres/data:/var/lib/postgresql/data
-    env_file:
-       - vars.env
+#  postgres:
+#    container_name: as_postgres
+#    build: ./services/postgres
+#    ports:
+#       - "5432:5432"
+#    environment:
+#       - POSTGRES_PASSWORD
+#    volumes:
+#       - /var/lib/aliseeks/postgres/data:/var/lib/postgresql/data
+#    env_file:
+#       - vars.env
 
   redis:
     container_name: as_redis

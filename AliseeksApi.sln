@@ -12,7 +12,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "AliseeksApi", "src\AliseeksApi\AliseeksApi.xproj", "{4AA75EB2-588D-41B8-830D-F641C7FFC571}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "AliseeksApi.UnitTests", "test\AliseeksApi.UnitTests\AliseeksApi.UnitTests.xproj", "{282ABC22-9F57-4934-A05F-0ACB3291BEAE}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1AF13C2E-532C-430B-9681-6DE4FD803C75}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "AliseeksApi.UnitTests", "tests\AliseeksApi.UnitTests\AliseeksApi.UnitTests.xproj", "{282ABC22-9F57-4934-A05F-0ACB3291BEAE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -34,5 +36,6 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4AA75EB2-588D-41B8-830D-F641C7FFC571} = {3679C53B-6711-4562-9363-D9CAA9B83856}
+		{282ABC22-9F57-4934-A05F-0ACB3291BEAE} = {1AF13C2E-532C-430B-9681-6DE4FD803C75}
 	EndGlobalSection
 EndGlobal
