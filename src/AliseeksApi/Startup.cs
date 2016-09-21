@@ -26,6 +26,8 @@ using AliseeksApi.Utility.Security;
 using AliseeksApi.Services.Logging;
 using AliseeksApi.Storage.Postgres.Logging;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Http;
+using SharpRaven.Core.Configuration;
 using SharpRaven.Core;
 
 namespace AliseeksApi
@@ -92,6 +94,9 @@ namespace AliseeksApi
             //Intermiediate service provider with IOptions
             var serviceProvider = services.BuildServiceProvider();
 
+            //Add HTTPContextAccessor as Singleton
+            services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+
             //Configure Redis Cache
             var redisConfig = serviceProvider.GetService<IOptions<RedisOptions>>();
             services.AddSingleton<IConnectionMultiplexer>(new RedisCache(redisConfig).Connect());
@@ -104,7 +109,14 @@ namespace AliseeksApi
             services.AddTransient<ILoggingPostgres, LoggingPostgres>();
 
             //Configure RavenClient
-            services.AddScoped<IRavenClient, RavenClient>();
+            services.AddScoped<IRavenClient, RavenClient>((s) => {
+
+                var rc = new RavenClient(s.GetRequiredService<IOptions<RavenOptions>>(), s.GetRequiredService<IHttpContextAccessor>())
+                {
+                    Environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+                };
+                return rc;
+            });
 
             services.AddTransient<IApplicationCache, ApplicationCache>();
             services.AddTransient<IAliexpressService, AliexpressService>();
