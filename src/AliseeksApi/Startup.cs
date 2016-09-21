@@ -26,6 +26,7 @@ using AliseeksApi.Utility.Security;
 using AliseeksApi.Services.Logging;
 using AliseeksApi.Storage.Postgres.Logging;
 using Microsoft.AspNetCore.Diagnostics;
+using SharpRaven.Core;
 
 namespace AliseeksApi
 {
@@ -59,6 +60,7 @@ namespace AliseeksApi
             services.Configure<JwtOptions>(Configuration.GetSection("JwtOptions"));
             services.Configure<RedisOptions>(Configuration.GetSection("RedisOptions"));
             services.Configure<PostgresOptions>(Configuration.GetSection("PostgresOptions"));
+            services.Configure<RavenOptions>(Configuration.GetSection("RavenOptions"));
 
             configureDependencyInjection(services);
         }
@@ -100,6 +102,9 @@ namespace AliseeksApi
             services.AddTransient<IUsersPostgres, UsersPostgres>();
             services.AddTransient<ISearchPostgres, SearchPostgres>();
             services.AddTransient<ILoggingPostgres, LoggingPostgres>();
+
+            //Configure RavenClient
+            services.AddScoped<IRavenClient, RavenClient>();
 
             services.AddTransient<IApplicationCache, ApplicationCache>();
             services.AddTransient<IAliexpressService, AliexpressService>();

@@ -12,6 +12,8 @@ using System.Text.RegularExpressions;
 using AliseeksApi.Utility.Extensions;
 using AliseeksApi.Storage.Postgres.Logging;
 using AliseeksApi.Models.Aliexpress;
+using SharpRaven.Core.Data;
+using SharpRaven.Core;
 
 namespace AliseeksApi.Services
 {
@@ -20,12 +22,14 @@ namespace AliseeksApi.Services
         IHttpService http;
         IApplicationCache cache;
         ISearchPostgres db;
+        IRavenClient raven;
 
-        public AliexpressService(IHttpService http, IApplicationCache cache, ISearchPostgres db)
+        public AliexpressService(IHttpService http, IApplicationCache cache, ISearchPostgres db, IRavenClient raven)
         {
             this.http = http;
             this.cache = cache;
             this.db = db;
+            this.raven = raven;
         }
 
         public async Task<SearchResultOverview> SearchItems(SearchCriteria search)
@@ -44,9 +48,12 @@ namespace AliseeksApi.Services
             {
                 await cache.StoreString(key, JsonConvert.SerializeObject(items));
             }
-            catch
+            catch(Exception e)
             {
-                //TODO: Log unable to cache expection
+                var sentry = new SentryEvent(e);
+                sentry.Message = $"Error when saving to cache: {e.Message}";
+
+                await raven.CaptureNetCoreEventAsync(sentry);
             }
 
             //Cache the next pages 2 -> 5 & Store results in Postgres
@@ -103,9 +110,14 @@ namespace AliseeksApi.Services
             {
                 await db.AddSearchAsync(criteriaModel, itemModels);
             }
-            catch
+            catch(Exception e)
             {
-                //TODO: Log this as a warning
+                var sentry = new SentryEvent(e)
+                {
+                    Level = ErrorLevel.Warning,
+                    Message = $"Error when saving search results: {e.Message}"
+                };
+                await raven.CaptureNetCoreEventAsync(sentry);
             }
         }
 
@@ -126,9 +138,14 @@ namespace AliseeksApi.Services
             {
                 await db.AddSearchAsync(criteriaModel, null);
             }
-            catch
+            catch (Exception e)
             {
-                //TODO: Log this as a warning
+                var sentry = new SentryEvent(e)
+                {
+                    Level = ErrorLevel.Warning,
+                    Message = $"Error when saving search results: {e.Message}"
+                };
+                await raven.CaptureNetCoreEventAsync(sentry);
             }
         }
 
@@ -153,10 +170,30 @@ namespace AliseeksApi.Services
         {
             string qs = new AliSearchEncoder().CreateQueryString(search);
             string endpoint = AliexpressEndpoints.SearchUrl + qs;
+            var items = new SearchResultOverview();
 
-            var response = await http.Get(endpoint);
+            //Add breadcrumb for error monitoring
+            var crumb = new Breadcrumb("AliexpressService")
+            {
+                Message = $"GET {endpoint}",
+                Data = new Dictionary<string, string>()
+                {
+                    { "Aliexpress URL", endpoint }
+                }
+            };
+            raven.AddTrail(crumb);
 
-            var items = new AliexpressPageDecoder().DecodePage(response);
+            try
+            {
+                var response = await http.Get(endpoint);
+
+                items = new AliexpressPageDecoder().DecodePage(response);
+            }
+            catch(Exception e)
+            {
+                var sentry = new SentryEvent(e);
+                await raven.CaptureNetCoreEventAsync(sentry);
+            }
 
             return items;
         }

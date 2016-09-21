@@ -10,6 +10,9 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.Extensions.Options;
 using AliseeksApi.Configuration;
+using AliseeksApi.Utility.Extensions;
+using SharpRaven.Core;
+using SharpRaven.Core.Data;
 
 namespace AliseeksApi.Authentication
 {
@@ -38,10 +41,12 @@ namespace AliseeksApi.Authentication
         const string audience = "AliseeksUser";
 
         private readonly JwtOptions jwtOptions;
+        private readonly IRavenClient raven;
 
-        public AliseeksJwtAuthentication(IOptions<JwtOptions> jwtOptions)
+        public AliseeksJwtAuthentication(IOptions<JwtOptions> jwtOptions, IRavenClient raven)
         {
             this.jwtOptions = jwtOptions.Value;
+            this.raven = raven;
         }
 
         public string GenerateToken(Claim[] claims)
@@ -72,7 +77,9 @@ namespace AliseeksApi.Authentication
             }
             catch (Exception e)
             {
-                //Rethrow errors until a better error hanlding can be done
+                var sentry = new SentryEvent(e);
+                raven.CaptureNetCoreEventAsync(sentry).Wait(); //blocking i/o
+
                 throw e;
             }
         }

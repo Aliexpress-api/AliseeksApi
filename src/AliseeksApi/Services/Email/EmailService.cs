@@ -14,6 +14,9 @@ using AliseeksApi.Models.Logging;
 using AliseeksApi.Services.Logging;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
+using SharpRaven.Core;
+using SharpRaven.Core.Data;
+using AliseeksApi.Utility.Extensions;   
 
 namespace AliseeksApi.Services.Email
 {
@@ -27,10 +30,13 @@ namespace AliseeksApi.Services.Email
         string templateWelcome = Path.Combine(new string[] {Directory.GetCurrentDirectory(), "Views", "Templates", "Email", "Welcome.html" });
         //string templateWelcome = @"\Views\Templates\Email\Welcome.html";
 
-        public EmailService(IOptions<EmailOptions> config, ILoggingService logging)
+        private readonly IRavenClient raven;
+
+        public EmailService(IOptions<EmailOptions> config, ILoggingService logging, IRavenClient raven)
         {
             this.config = config.Value;
             this.logging = logging;
+            this.raven = raven;
         }
 
         public async Task SendMailTo(string body, string subject, string address)
@@ -55,7 +61,8 @@ namespace AliseeksApi.Services.Email
             }
             catch (Exception e)
             {
-                throw e;
+                var sentry = new SentryEvent(e);
+                await raven.CaptureNetCoreEventAsync(sentry);
             }
         }
 
@@ -75,7 +82,8 @@ namespace AliseeksApi.Services.Email
             }
             catch (Exception e)
             {
-                throw e;
+                var sentry = new SentryEvent(e);
+                await raven.CaptureNetCoreEventAsync(sentry);
             }
         }
 
@@ -110,6 +118,7 @@ namespace AliseeksApi.Services.Email
                 }
                 catch(Exception e)
                 {
+                    //Log exception through Postgres
                     var model = new ExceptionLogModel()
                     {
                         Message = e.Message + $" {config.ElasticmailUsername} {config.ElasticmailSecret}",
@@ -118,6 +127,11 @@ namespace AliseeksApi.Services.Email
                     };
 
                     await logging.LogException(model);
+
+                    //Log exception through Sentry
+                    var sentry = new SentryEvent(e);
+                    sentry.Tags.Add("Elasticmail Config", $"Username: {config.ElasticmailUsername} Secret: {config.ElasticmailSecret}");
+                    await raven.CaptureNetCoreEventAsync(sentry);
                 }
             }
         }

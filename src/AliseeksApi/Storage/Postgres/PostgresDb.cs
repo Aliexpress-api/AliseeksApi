@@ -6,16 +6,21 @@ using Npgsql;
 using Microsoft.Extensions.Options;
 using AliseeksApi.Configuration;
 using System.Data.Common;
+using SharpRaven.Core;
+using SharpRaven.Core.Data;
+using AliseeksApi.Utility.Extensions;
 
 namespace AliseeksApi.Storage.Postgres
 {
     public class PostgresDb : IPostgresDb
     {
         PostgresOptions config;
+        private readonly IRavenClient raven;
 
-        public PostgresDb(IOptions<PostgresOptions> config)
+        public PostgresDb(IOptions<PostgresOptions> config, IRavenClient raven)
         {
             this.config = config.Value;
+            this.raven = raven;
         }
 
         public NpgsqlConnection Connect()
@@ -49,8 +54,8 @@ namespace AliseeksApi.Storage.Postgres
             }
             catch (Exception e)
             {
-                //Rethrow until we can find a better way to handle errors
-                throw e;
+                var sentry = new SentryEvent(e);
+                await raven.CaptureNetCoreEventAsync(sentry);
             }
         }
 
@@ -75,8 +80,8 @@ namespace AliseeksApi.Storage.Postgres
             }
             catch(Exception e)
             {
-                //Rethrow until we can find a better way to handle errors
-                throw e;
+                var sentry = new SentryEvent(e);
+                await raven.CaptureNetCoreEventAsync(sentry);
             }
         }
 
@@ -95,8 +100,8 @@ namespace AliseeksApi.Storage.Postgres
             }
             catch(Exception e)
             {
-                //Rethrow until we can find a better way to handle errors
-                throw e;
+                var sentry = new SentryEvent(e);
+                await raven.CaptureNetCoreEventAsync(sentry);
             }
         }
     }

@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Logging;
+using SharpRaven.Core;
+using SharpRaven.Core.Data;
+using AliseeksApi.Utility.Extensions;
 
 namespace AliseeksApi.Middleware
 {
@@ -22,10 +25,13 @@ namespace AliseeksApi.Middleware
     {
         private readonly RequestDelegate _next;
         private ILogger<Logger> logger;
-        public Logger(RequestDelegate next, ILogger<Logger> logger)
+        private IRavenClient raven;
+
+        public Logger(RequestDelegate next, ILogger<Logger> logger, IRavenClient raven)
         {
             this._next = next;
             this.logger = logger;
+            this.raven = raven;
         }
 
         public async Task Invoke(HttpContext context)
@@ -33,7 +39,25 @@ namespace AliseeksApi.Middleware
             logger.LogInformation($"{context.Request.Path}\tRECEIVED");
             var sw = new Stopwatch();
             sw.Start();
-            await _next.Invoke(context);
+
+            var crumb = new Breadcrumb("LoggerMiddleware");
+            crumb.Message = $"{context.Request.Method} {context.Request.Path}{context.Request.QueryString.ToUriComponent()}";
+            crumb.Data = new Dictionary<string, string>() {
+                { "IsAuthenticated", context.User.Identity.IsAuthenticated.ToString() },
+                { "Authentication", context.User.Identity.IsAuthenticated ? context.User.Identity.Name : "Unknown" }
+            };
+            raven.AddTrail(crumb);
+
+            try
+            {
+                await _next.Invoke(context);
+            }
+            catch(Exception e)
+            {
+                //Log exception with RavenClient
+                await raven.CaptureNetCoreEventAsync(e);
+            }
+   
             sw.Stop();
             logger.LogInformation($"{context.Request.Path}\t{sw.Elapsed.TotalMilliseconds}(ms)");
         }

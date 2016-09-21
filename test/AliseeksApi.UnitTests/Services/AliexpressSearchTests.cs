@@ -9,8 +9,9 @@ using AliseeksApi.Storage.Postgres.Search;
 using AliseeksApi.Utility;
 using AliseeksApi.Models.Search;
 using Moq;
+using AliseeksApi.UnitTests.Utility;
 
-namespace AliseeksApi.Tests.Services
+namespace AliseeksApi.UnitTests.Services
 {
     public class AliexpressSearchTests
     {
@@ -28,6 +29,9 @@ namespace AliseeksApi.Tests.Services
                     new object[] { new SearchCriteria() { SearchText = "40mm 12V" } },
                     new object[] { new SearchCriteria() { SearchText = "PTFE", Page = 2 } },
                     new object[] { new SearchCriteria() { SearchText = "PTFE", Page = 2, PriceFrom=2 } },
+                    new object[] { new SearchCriteria() { SearchText = "PTFE", Page = 1, AppOnly = true } },
+                    new object[] { new SearchCriteria() { SearchText = "PTFE", Page = 1, FreeShipping = true } },
+                    new object[] { new SearchCriteria() { SearchText = "PTFE", Page = 1, SaleItems = true } },
                     new object[] { new SearchCriteria() {  SearchText = "wire"} }
                 };
             }
@@ -42,7 +46,7 @@ namespace AliseeksApi.Tests.Services
             moqCache.Setup(x => x.Exists(It.IsAny<string>())).ReturnsAsync(false);
 
             moqDb = new Mock<ISearchPostgres>();
-            service = new AliexpressService(httpService, moqCache.Object, moqDb.Object);
+            service = new AliexpressService(httpService, moqCache.Object, moqDb.Object, new FakeRavenClient().Object);
         }
 
         [Theory]

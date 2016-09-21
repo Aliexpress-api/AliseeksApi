@@ -16,6 +16,8 @@ using AliseeksApi.Services.Email;
 using AliseeksApi.Models.Email;
 using Microsoft.Extensions.Logging;
 using AliseeksApi.Utility.Extensions;
+using SharpRaven.Core;
+using SharpRaven.Core.Data;
 
 namespace AliseeksApi.Services.User
 {
@@ -25,14 +27,16 @@ namespace AliseeksApi.Services.User
         IUsersPostgres db;
         ISecurityHasher hasher;
         IEmailService email;
+        IRavenClient raven;
 
         public UserService(IJwtFactory jwtFactory, IUsersPostgres db, ISecurityHasher hasher,
-            IEmailService email)
+            IEmailService email, IRavenClient raven)
         {
             this.jwtFactory = jwtFactory;
             this.db = db;
             this.hasher = hasher;
             this.email = email;
+            this.raven = raven;
         }
 
         public async Task<UserLoginResponse> Login(UserLoginModel model)
@@ -111,13 +115,16 @@ namespace AliseeksApi.Services.User
             }
             catch (PostgresDuplicateValueException e)
             {
+                var sentry = new SentryEvent(e);
+                await raven.CaptureNetCoreEventAsync(sentry);
+
                 //Should not get this exception
                 throw e;
             }
             catch (Exception e)
             {
-                //Rethrow until we can find a better way to handle errors
-                throw e;
+                var sentry = new SentryEvent(e);
+                await raven.CaptureNetCoreEventAsync(sentry);
             }
 
             AppTask.Forget(() =>  email.SendWelcomeTo(new WelcomeModel()
@@ -133,27 +140,36 @@ namespace AliseeksApi.Services.User
         public async Task<BaseServiceResponse> ResetPassword(UserResetPasswordModel model)
         {
             var response = new BaseServiceResponse();
-            if(model.Email == null) { return response; }
 
-            var user = await db.FindByEmail(model.Email.ToLower());
-
-            if (user == null) { return response; }
-
-            string resetToken = hasher.Hash(model.Email).Hash;
-            user.Reset = resetToken;
-
-            await db.UpdateAsync(user);
-
-            var resetModel = new PasswordResetModel()
+            try
             {
-                ActionUrl = $"localhost:5220/user/reset?token={resetToken}",
-                Name = user.Username,
-                SenderName = "Alex",
-                Subject = "Password Reset",
-                ToAddress = user.Email
-            };
+                if (model.Email == null) { return response; }
 
-            await email.SendPasswordResetTo(resetModel);
+                var user = await db.FindByEmail(model.Email.ToLower());
+
+                if (user == null) { return response; }
+
+                string resetToken = hasher.Hash(model.Email).Hash;
+                user.Reset = resetToken;
+
+                await db.UpdateAsync(user);
+
+                var resetModel = new PasswordResetModel()
+                {
+                    ActionUrl = $"http://www.aliseeks.com/user/reset?token={resetToken}",
+                    Name = user.Username,
+                    SenderName = "Alex",
+                    Subject = "Password Reset",
+                    ToAddress = user.Email
+                };
+
+                await email.SendPasswordResetTo(resetModel);
+            }
+            catch(Exception e)
+            {
+                var sentry = new SentryEvent(e);
+                await raven.CaptureNetCoreEventAsync(sentry);
+            }
 
             return response;
         }
@@ -176,8 +192,8 @@ namespace AliseeksApi.Services.User
             }
             catch(Exception e)
             {
-                //Rethrow until we can find a better way to handle errors
-                throw e;
+                var sentry = new SentryEvent(e);
+                await raven.CaptureNetCoreEventAsync(sentry);
             }
 
             return response;

@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using AliseeksApi.Models.User;
 using AliseeksApi.Services.User;
+using SharpRaven.Core;
+using SharpRaven.Core.Data;
 
 // For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -14,10 +16,12 @@ namespace AliseeksApi.Controllers
     public class UserController : Controller
     {
         IUserService user;
+        IRavenClient raven;
 
-        public UserController(IUserService user)
+        public UserController(IUserService user, IRavenClient raven)
         {
             this.user = user;
+            this.raven = raven;
         }
 
         [HttpPost]

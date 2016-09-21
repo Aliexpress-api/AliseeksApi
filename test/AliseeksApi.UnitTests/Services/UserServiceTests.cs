@@ -12,8 +12,9 @@ using AliseeksApi.Utility.Security;
 using AliseeksApi.Models.User;
 using Moq;
 using Xunit;
+using AliseeksApi.UnitTests.Utility;
 
-namespace AliseeksApi.Tests.Services
+namespace AliseeksApi.UnitTests.Services
 {
     public class UserServiceTests
     {
@@ -29,9 +30,9 @@ namespace AliseeksApi.Tests.Services
             hasher = new SecurityHasher();
             dbMock = new Mock<IUsersPostgres>();
             emailMock = new Mock<IEmailService>();
-            auth = new AliseeksJwtAuthentication(new Microsoft.Extensions.Options.OptionsWrapper<JwtOptions>(jwtOptions));
+            auth = new AliseeksJwtAuthentication(new Microsoft.Extensions.Options.OptionsWrapper<JwtOptions>(jwtOptions), new FakeRavenClient().Object);
 
-            service = new UserService(auth, dbMock.Object, hasher, emailMock.Object);
+            service = new UserService(auth, dbMock.Object, hasher, emailMock.Object, new FakeRavenClient().Object);
         }
 
         [Fact]
