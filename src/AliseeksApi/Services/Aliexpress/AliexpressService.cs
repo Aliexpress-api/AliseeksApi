@@ -11,7 +11,6 @@ using AliseeksApi.Storage.Postgres.Search;
 using System.Text.RegularExpressions;
 using AliseeksApi.Utility.Extensions;
 using AliseeksApi.Storage.Postgres.Logging;
-using AliseeksApi.Models.Aliexpress;
 using SharpRaven.Core.Data;
 using SharpRaven.Core;
 
@@ -23,17 +22,22 @@ namespace AliseeksApi.Services
         IApplicationCache cache;
         ISearchPostgres db;
         IRavenClient raven;
+        AliseeksApi.Services.DHGate.IDHGateService dhgate;
 
-        public AliexpressService(IHttpService http, IApplicationCache cache, ISearchPostgres db, IRavenClient raven)
+        public AliexpressService(IHttpService http, IApplicationCache cache, ISearchPostgres db, IRavenClient raven,
+            AliseeksApi.Services.DHGate.IDHGateService dhgate)
         {
             this.http = http;
             this.cache = cache;
             this.db = db;
             this.raven = raven;
+            this.dhgate = dhgate;
         }
 
         public async Task<SearchResultOverview> SearchItems(SearchCriteria search)
         {
+            var items = await dhgate.SearchItems(search);
+            return null;
             //Check for cached item list
             string key = JsonConvert.SerializeObject(search);
             if (await cache.Exists(key))
@@ -42,7 +46,7 @@ namespace AliseeksApi.Services
                 return JsonConvert.DeserializeObject<SearchResultOverview>(await cache.GetString(key));
             }
 
-            var items = await searchItems(search);
+            //var items = await searchItems(search);
 
             try
             {
@@ -168,8 +172,8 @@ namespace AliseeksApi.Services
         //Function that actually goes out and gets Aliexpress search and converts it
         async Task<SearchResultOverview> searchItems(SearchCriteria search)
         {
-            string qs = new AliSearchEncoder().CreateQueryString(search);
-            string endpoint = AliexpressEndpoints.SearchUrl + qs;
+            string qs = new QueryStringEncoder().CreateQueryString(search, Utility.Attributes.SearchService.Aliexpress);
+            string endpoint = SearchEndpoints.AliexpressSearchUrl + qs;
             var items = new SearchResultOverview();
 
             //Add breadcrumb for error monitoring

@@ -2,14 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using AliseeksApi.Models;
 using AliseeksApi.Models.Search;
 
-namespace AliseeksApi.Services
+namespace AliseeksApi.Services.DHGate
 {
-    public interface IAliexpressService
+    public interface IDHGateService
     {
         Task<SearchResultOverview> SearchItems(SearchCriteria search);
-        Task CacheItems(SearchCriteria search);
     }
 }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using AliseeksApi.Models;
 using HtmlAgilityPack;
 using AliseeksApi.Utility.Extensions;
-using AliseeksApi.Models.Aliexpress;
+using AliseeksApi.Models.Search;
 
 namespace AliseeksApi.Utility
 {
@@ -81,7 +81,6 @@ namespace AliseeksApi.Utility
 
             return searchResult;
 		}
-
 
 		//Where the magic happens
 		Item decodeItemnode(HtmlNode node)

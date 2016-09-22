@@ -29,6 +29,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using SharpRaven.Core.Configuration;
 using SharpRaven.Core;
+using AliseeksApi.Services.DHGate;
 
 namespace AliseeksApi
 {
@@ -120,6 +121,7 @@ namespace AliseeksApi
 
             services.AddTransient<IApplicationCache, ApplicationCache>();
             services.AddTransient<IAliexpressService, AliexpressService>();
+            services.AddTransient<IDHGateService, DHGateService>();
             services.AddTransient<IHttpService, HttpService>();
             services.AddTransient<IEmailService, EmailService>();
             services.AddTransient<IJwtFactory, AliseeksJwtAuthentication>();

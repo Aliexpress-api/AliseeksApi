@@ -9,31 +9,32 @@ namespace AliseeksApi.Models.Search
 {
     public class SearchCriteria
     {
-        [QueryStringEncode("SearchText")]
+        [QueryStringEncode(SearchService.Aliexpress, "SearchText")]
+        [QueryStringEncode(SearchService.DHGate, "searchKey")]
         public string SearchText { get; set; }
 
-        [QueryStringEncode("minPrice")]
+        [QueryStringEncode(SearchService.Aliexpress, "minPrice")]
         public double? PriceFrom { get; set; }
 
-        [QueryStringEncode("maxPrice")]
+        [QueryStringEncode(SearchService.Aliexpress, "maxPrice")]
         public double? PriceTo { get; set; }
 
-        [QueryStringEncode("shipFromCountry")]
+        [QueryStringEncode(SearchService.Aliexpress, "shipFromCountry")]
         public string ShipFrom { get; set; }
 
-        [QueryStringEncode("shipCountry")]
+        [QueryStringEncode(SearchService.Aliexpress, "shipCountry")]
         public string ShipTo { get; set; }
 
-        [QueryStringEncode("isFreeShip")]
+        [QueryStringEncode(SearchService.Aliexpress, "isFreeShip")]
         public bool? FreeShipping { get; set; }
 
-        [QueryStringEncode("isOnSale")]
+        [QueryStringEncode(SearchService.Aliexpress, "isOnSale")]
         public bool? SaleItems { get; set; }
 
-        [QueryStringEncode("isMobileExclusive")]
+        [QueryStringEncode(SearchService.Aliexpress, "isMobileExclusive")]
         public bool? AppOnly { get; set; }
 
-        [QueryStringEncode("page")]
+        [QueryStringEncode(SearchService.Aliexpress, "page")]
         public int? Page { get; set; }
 
         [JsonIgnore]
