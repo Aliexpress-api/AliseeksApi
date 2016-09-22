@@ -10,7 +10,7 @@ namespace AliseeksApi.Models.Search
     public class SearchCriteria
     {
         [QueryStringEncode(SearchService.Aliexpress, "SearchText")]
-        [QueryStringEncode(SearchService.DHGate, "searchKey")]
+        [QueryStringEncode(SearchService.DHGate, "searchkey")]
         public string SearchText { get; set; }
 
         [QueryStringEncode(SearchService.Aliexpress, "minPrice")]

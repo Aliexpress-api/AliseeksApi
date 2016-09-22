@@ -36,8 +36,6 @@ namespace AliseeksApi.Services
 
         public async Task<SearchResultOverview> SearchItems(SearchCriteria search)
         {
-            var items = await dhgate.SearchItems(search);
-            return null;
             //Check for cached item list
             string key = JsonConvert.SerializeObject(search);
             if (await cache.Exists(key))
@@ -46,7 +44,8 @@ namespace AliseeksApi.Services
                 return JsonConvert.DeserializeObject<SearchResultOverview>(await cache.GetString(key));
             }
 
-            //var items = await searchItems(search);
+            var items = await searchItems(search);
+            //var items = await dhgate.SearchItems(search);
 
             try
             {

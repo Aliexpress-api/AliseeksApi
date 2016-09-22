@@ -31,7 +31,7 @@ namespace AliseeksApi.Services.DHGate
                 var searchResultOverview = extractResultsOverview(doc.DocumentNode);
 
                 //select element holding items
-                var itemElements = doc.DocumentNode.Descendants().First(p => p.Id.Contains("page")).Descendants().Where(p => p.Attributes.Contains("class") && p.Attributes["class"].Value.Contains("listitem"));
+                var itemElements = doc.DocumentNode.Descendants().Where(p => p.Attributes.Contains("class") && p.Attributes["class"].Value.Contains("listitem"));
 
                 //Cycle through all the elements
                 foreach (var element in itemElements)
@@ -86,34 +86,41 @@ namespace AliseeksApi.Services.DHGate
 
             //Get name node
 
+            /*<a href="http://www.dhgate.com/product/2015-new-hot-brand-larsson-jennings-watch/377143614.html#s1-0-1b;searl|0952724766" class="subject">
+             * 2015 New Hot Brand Larsson Jennings Watch For Mens   Women Fashion Casual Quartz-Watch Leather Watch 40mm Relojes LJ Watches
+             * </a>
+             */
             var nameElement = node.GetNodesByCssClass("subject");
 
+            /*<img src="http://www.dhresource.com/200x200s/f2-albu-g4-M01-E6-34-rBVaEFbyvs6ANN1fAAHQSjo9I-I825.jpg/2015-new-hot-brand-larsson-jennings-watch.jpg"
+             * alt="Wholesale 2015 New Hot Brand Larsson Jennings Watch For Mens Women Fashion Casual Quartz Watch Leather Watch mm Relojes LJ Watches" class="lthumbnail" style="width: 160px; height: 160px;">
+             */
             var imageElement = node.GetNodesByCssClass("lthumbnail");
 
-            var priceElement = node.GetNodesByCssClass("pricewrap");
+            //<li class="price"><span>US $ 11.36 - 12.92</span> / Piece</li>
+            var priceElement = node.Descendants().First(x => x.Attributes.Contains("class") && x.Attributes["class"].Value == "price");
 
-            //<strong class="free-s">Free Shipping</strong>
+            //<li class="freeico"><span class="free">Free shipping</span> 
             var freesElement = node.GetNodesByCssClass("free");
 
-            //<a href="//www.aliexpress.com/store/1041550" title="Just Beading" class="store "   >Just Beading</a>
-            var storeElement = node.GetNodesByCssClass("seller");
+            /*<span class="seller">Seller:
+             *  <a href = "http://www.dhgate.com/store/20018058" > huangxuerui </a> </ span >
+             */
+            var storeElement = node.Descendants().First(x => x.Attributes.Contains("class") && x.Attributes["class"].Value == "seller");
 
-            //<span class="score-icon-new score-level-21" id="score20" feedBackScore="784" sellerPositiveFeedbackPercentage="97.8"></span>
-            var feedbackElement = node.Descendants().FirstOrDefault(x => x.Attributes.Contains("feedback"));
+            //<li class="feedback"><span>97.3%</span> Positive Feedback</li>
+            var feedbackElement = node.GetNodesByCssClass("feedback");
 
-            /*
-			<span rel="nofollow" class="order-num">
-				 <a class="order-num-a " href="//www.aliexpress.com/item/Wholesale-Factory-Price-Approx-2200pcs-lot-Jewelry-Head-Pin-Findings-Gold-Plated-45MM-Eye-Pin-for/32263213196.html?ws_ab_test=searchweb201556_0,searchweb201602_1_10065_10068_10067_112_10069_110_111_10017_109_108_10060_10061_10062_10057_10056_10055_10054_10059_10058_10073_10070_10052_10053_10050_10051,searchweb201603_1&amp;btsid=8eae686d-1bf4-4944-acb8-ee998e6a1998#thf" rel="nofollow" >
-					<em title="Total Orders"> Orders (0)</em>
-				 </a>
-			</span>
-			*/
+            //<li class="feedback"><span>97.3%</span> Positive Feedback</li>
             var ordersElement = node.GetNodesByCssClass("min");
 
-            //<span title="Top-rated Seller" class="top-rated-seller"></span>
+            //<span class="m-word">Premium Merchant </ span >
             var topRatedSellerElement = node.GetNodesByCssClass("m-word");
 
-            //<input class="atc-product-id" type="hidden" value="32493137804" />
+            /*<li class="cart" onclick="goog_report_conversion();" itemcodeid="387017480" impressioninfo="s1-1-1b;searl|0952724766" supplierid="ff8080813ef436e4013f1c8f40236130">
+             *    < span class="n-yellow-button">Add to Cart</span>
+		     * </li>
+             */					
             var itemIdElement = node.GetNodesByCssClass("cart");
 
             /*
@@ -159,7 +166,7 @@ namespace AliseeksApi.Services.DHGate
                 }
                 item.Currency = item.Currency.Trim();
 
-                item.Unit = priceElement.InnerText;
+                item.Unit = new String(priceElement.InnerText.Substring(priceString.Length).Where(x => Char.IsLetter(x)).ToArray()).ToLower();
             }
 
             item.FreeShipping = (freesElement != null);
@@ -173,11 +180,11 @@ namespace AliseeksApi.Services.DHGate
             {
                 var feedbackString = feedbackElement.Descendants().First(p => p.Name == "span").InnerText;
                 var priceRegex = Regex.Match(feedbackString, feedbackStringRegex);
-                var feedbackInt = 0;
+                decimal feedbackInt = 0;
 
-                if (int.TryParse(priceRegex.Value, out feedbackInt))
+                if (decimal.TryParse(priceRegex.Value, out feedbackInt))
                 {
-                    item.Feedback = feedbackInt;
+                    item.Feedback = (int)feedbackInt;
                 }
                 else
                 {
@@ -190,7 +197,7 @@ namespace AliseeksApi.Services.DHGate
                 var quantityString = Regex.Match(ordersElement.InnerText, quantityStringRegex);
                 var quantityTemp = 0;
 
-                if(!int.TryParse(quantityString.Value, out quantityTemp))
+                if(int.TryParse(quantityString.Value, out quantityTemp))
                 {
                     item.Quantity = quantityTemp;
                 }
@@ -221,6 +228,11 @@ namespace AliseeksApi.Services.DHGate
             else
             {
                 item.ShippingPrice = 0;
+            }
+
+            if(item.Price.Length > 0)
+            {
+                item.LotPrice = item.Quantity * item.Price[0];
             }
 
             return item;

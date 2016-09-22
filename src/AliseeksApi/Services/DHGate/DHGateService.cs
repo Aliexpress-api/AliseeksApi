@@ -18,11 +18,10 @@ namespace AliseeksApi.Services.DHGate
 
         public async Task<SearchResultOverview> SearchItems(SearchCriteria search)
         {
-            await searchItems(search);
-            return null;
+            return await searchItems(search);
         }
 
-        async Task searchItems(SearchCriteria search)
+        async Task<SearchResultOverview> searchItems(SearchCriteria search)
         {
             string qs = new QueryStringEncoder().CreateQueryString(search, Utility.Attributes.SearchService.DHGate);
             string endpoint = SearchEndpoints.DHGateSearchUrl + qs;
@@ -38,6 +37,8 @@ namespace AliseeksApi.Services.DHGate
             {
 
             }
+
+            return items;
         }
     }
 }
