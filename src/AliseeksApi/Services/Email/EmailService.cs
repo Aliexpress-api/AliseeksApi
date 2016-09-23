@@ -16,7 +16,7 @@ using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using SharpRaven.Core;
 using SharpRaven.Core.Data;
-using AliseeksApi.Utility.Extensions;   
+using AliseeksApi.Utility.Extensions;
 
 namespace AliseeksApi.Services.Email
 {

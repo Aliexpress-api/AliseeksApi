@@ -27,7 +27,7 @@ namespace AliseeksApi.Storage.Cache
 
         public async Task<bool> StoreString(string key, string json)
         {
-            return await persistentDb.StringSetAsync(key, json, TimeSpan.FromMinutes(5), When.Always, CommandFlags.FireAndForget);
+            return await persistentDb.StringSetAsync(key, json, TimeSpan.FromHours(4), When.Always, CommandFlags.FireAndForget);
         }
     }
 }

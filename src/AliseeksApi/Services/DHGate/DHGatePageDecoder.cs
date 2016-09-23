@@ -7,18 +7,22 @@ using AliseeksApi.Models;
 using HtmlAgilityPack;
 using AliseeksApi.Utility.Extensions;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.WebUtilities;
+using System.Net;
 
 namespace AliseeksApi.Services.DHGate
 {
     public class DHGatePageDecoder
     {
+        public string PagingKey { get; set; }
+
         //Matches all decimal numbers with OPTIONAL decimal point
         const string priceStringRegex = @"\d+\.?\d*";
 
         const string feedbackStringRegex = @"\d+\.?\d*";
 
         const string quantityStringRegex = @"\d+\.?\d*";
-
 
 
         public SearchResultOverview DecodePage(string html)
@@ -28,20 +32,36 @@ namespace AliseeksApi.Services.DHGate
                 var doc = new HtmlDocument();
                 doc.LoadHtml(html);
 
-                var searchResultOverview = extractResultsOverview(doc.DocumentNode);
-
-                //select element holding items
-                var itemElements = doc.DocumentNode.Descendants().Where(p => p.Attributes.Contains("class") && p.Attributes["class"].Value.Contains("listitem"));
-
-                //Cycle through all the elements
-                foreach (var element in itemElements)
+                //If zero1 then 
+                if (doc.DocumentNode.GetNodesByCssClass("zero1") == null)
                 {
-                    var item = decodeItemnode(element);
+                    var searchResultOverview = extractResultsOverview(doc.DocumentNode);
 
-                    searchResultOverview.Items.Add(item);
+                    PagingKey = extractPagingKey(doc.DocumentNode);
+
+                    //select element holding items
+                    var itemElements = doc.DocumentNode.Descendants().Where(p => p.Attributes.Contains("class") && p.Attributes["class"].Value.Contains("listitem"));
+
+                    //Cycle through all the elements
+                    foreach (var element in itemElements)
+                    {
+                        var item = decodeItemnode(element);
+
+                        searchResultOverview.Items.Add(item);
+                    }
+
+                    return searchResultOverview;
                 }
+                else
+                {
+                    var searchResultsOverview = new SearchResultOverview()
+                    {
+                        SearchCount = 0,
+                        Items = new List<Item>()
+                    };
 
-                return searchResultOverview;
+                    return searchResultsOverview;
+                }
             }
             catch(Exception e)
             {
@@ -74,6 +94,23 @@ namespace AliseeksApi.Services.DHGate
             }
 
             return searchResult;
+        }
+
+        string extractPagingKey(HtmlNode node)
+        {
+            /* <span class="pagelist">
+             * <a href="http://www.dhgate.com/w/40mm+12v/1.html?leftpars=c2hpcGNvbXBhbmllcz1zNG8tc2o5LWRobC1zZDQtc2JpLXVwcy10bnQtc2FvLXN1NC1zOHAtczcyLXNlZGRoZ2F0ZQ==" rel="nofollow">2</a>
+             * </span>
+             */ 
+
+            var pagelist = node.GetNodesByCssClass("pagelist");
+            var page = pagelist.Descendants().First(x => x.Name == "a");
+            var key = page.Attributes.Contains("href") ? page.Attributes["href"].Value : "";
+            var uri = new Uri(key);
+
+            var qs = QueryHelpers.ParseQuery(uri.Query);
+
+            return qs.ContainsKey("leftpars") ? String.Join("", qs["leftpars"]) : "";           
         }
 
         //Where the magic happens

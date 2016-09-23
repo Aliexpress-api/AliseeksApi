@@ -29,6 +29,11 @@ namespace AliseeksApi.Models.Search
 
         [JsonIgnore]
         public SearchCriteriaMeta Meta { get; set; }
+
+        public SearchCriteria()
+        {
+            Page = 1;
+        }
     }
 
     public class SearchCriteriaMeta
