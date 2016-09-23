@@ -25,6 +25,7 @@ using AliseeksApi.Storage.Postgres.Search;
 using AliseeksApi.Utility.Security;
 using AliseeksApi.Services.Logging;
 using AliseeksApi.Storage.Postgres.Logging;
+using AliseeksApi.Services.Search;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using SharpRaven.Core.Configuration;
@@ -122,6 +123,7 @@ namespace AliseeksApi
             services.AddTransient<IApplicationCache, ApplicationCache>();
             services.AddTransient<IAliexpressService, AliexpressService>();
             services.AddTransient<IDHGateService, DHGateService>();
+            services.AddTransient<ISearchService, SearchService>();
             services.AddTransient<IHttpService, HttpService>();
             services.AddTransient<IEmailService, EmailService>();
             services.AddTransient<IJwtFactory, AliseeksJwtAuthentication>();

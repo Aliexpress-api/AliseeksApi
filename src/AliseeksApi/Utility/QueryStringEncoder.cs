@@ -31,8 +31,15 @@ namespace AliseeksApi.Utility
                     object val = prop.GetValue(criteria);
                     if (val != null && encode != null && encode.Service == service)
                     {
-                        var encodedValue = val.ToString().Replace(" ", "+");
-                        if (val.GetType() == typeof(bool)) encodedValue = ((bool)val).YesOrNo();
+                        var encodedValue = val.ToString();
+
+                        if(encode.Value != null)
+                        {
+                            encodedValue = encode.Value(val).ToString();
+                        }
+
+                        //var encodedValue = val.ToString().Replace(" ", "+");
+                        //if (val.GetType() == typeof(bool)) encodedValue = ((bool)val).YesOrNo();
 
                         keyvalue.Add($"{encode.Name}={encodedValue.ToString()}");
                     }

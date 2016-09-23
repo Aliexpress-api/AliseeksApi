@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AliseeksApi.Models.Search;
 using AliseeksApi.Utility;
+using Microsoft.AspNetCore.Http;
 
 namespace AliseeksApi.Services.DHGate
 {
@@ -24,6 +25,10 @@ namespace AliseeksApi.Services.DHGate
         async Task<SearchResultOverview> searchItems(SearchCriteria search)
         {
             string qs = new QueryStringEncoder().CreateQueryString(search, Utility.Attributes.SearchService.DHGate);
+
+            var uniqueQs = new QueryString();
+            uniqueQs.Add("")
+
             string endpoint = SearchEndpoints.DHGateSearchUrl + qs;
             var items = new SearchResultOverview();
 

@@ -13,6 +13,7 @@ using AliseeksApi.Utility.Extensions;
 using AliseeksApi.Storage.Postgres.Logging;
 using SharpRaven.Core.Data;
 using SharpRaven.Core;
+using AliseeksApi.Services.Aliexpress;
 
 namespace AliseeksApi.Services
 {
@@ -36,33 +37,7 @@ namespace AliseeksApi.Services
 
         public async Task<SearchResultOverview> SearchItems(SearchCriteria search)
         {
-            //Check for cached item list
-            string key = JsonConvert.SerializeObject(search);
-            if (await cache.Exists(key))
-            {
-                AppTask.Forget(async () => await storeSearch(search, new List<Item>()));
-                return JsonConvert.DeserializeObject<SearchResultOverview>(await cache.GetString(key));
-            }
-
             var items = await searchItems(search);
-            //var items = await dhgate.SearchItems(search);
-
-            try
-            {
-                await cache.StoreString(key, JsonConvert.SerializeObject(items));
-            }
-            catch(Exception e)
-            {
-                var sentry = new SentryEvent(e);
-                sentry.Message = $"Error when saving to cache: {e.Message}";
-
-                await raven.CaptureNetCoreEventAsync(sentry);
-            }
-
-            //Cache the next pages 2 -> 5 & Store results in Postgres
-            int from = search.Page == null ? 2 : (int)search.Page;
-            AppTask.Forget(async () => await cacheSearchPages(search, from, from + 3));
-            AppTask.Forget(async () => await storeSearch(search, items.Items));
 
             return items;
         }
@@ -171,7 +146,7 @@ namespace AliseeksApi.Services
         //Function that actually goes out and gets Aliexpress search and converts it
         async Task<SearchResultOverview> searchItems(SearchCriteria search)
         {
-            string qs = new QueryStringEncoder().CreateQueryString(search, Utility.Attributes.SearchService.Aliexpress);
+            string qs = new AliexpressQueryString().Convert(search);
             string endpoint = SearchEndpoints.AliexpressSearchUrl + qs;
             var items = new SearchResultOverview();
 

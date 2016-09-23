@@ -10,6 +10,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Security.Claims;
+using AliseeksApi.Services.Search;
 
 using AliseeksApi.Storage.Postgres.Users;
 
@@ -18,12 +19,12 @@ namespace AliseeksApi.Controllers
     [Route("api/[controller]")]
     public class SearchController : Controller
     {
-        IAliexpressService ali;
+        private readonly ISearchService search;
         ILogger logger;
 
-        public SearchController(IAliexpressService ali, ILogger<SearchController> logger)
+        public SearchController(ISearchService search, ILogger<SearchController> logger)
         {
-            this.ali = ali;
+            this.search = search;
             this.logger = logger;
         }
 
@@ -38,7 +39,7 @@ namespace AliseeksApi.Controllers
                     User = HttpContext.User.FindFirst(ClaimTypes.Name).Value
                 };
 
-            var response = await ali.SearchItems(search);
+            var response = await this.search.SearchItems(search);
 
             HttpContext.Response.Headers.Add("X-TOTAL-COUNT", response.SearchCount.ToString());
 
@@ -55,7 +56,7 @@ namespace AliseeksApi.Controllers
                     User = HttpContext.User.FindFirst(ClaimTypes.Name).Value
                 };
 
-            await ali.CacheItems(search);
+            await this.search.CacheItems(search);
             return Ok();
         }
     }

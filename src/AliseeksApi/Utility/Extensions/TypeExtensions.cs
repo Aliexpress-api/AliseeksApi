@@ -11,5 +11,10 @@ namespace AliseeksApi.Utility.Extensions
         {
             return value ? "y" : "n";
         }
+
+        public static string OneOrZero(this bool value)
+        {
+            return value ? "1" : "0";
+        }
     }
 }

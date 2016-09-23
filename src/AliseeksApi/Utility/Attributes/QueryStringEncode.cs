@@ -15,6 +15,7 @@ namespace AliseeksApi.Utility.Attributes
     {
         public string Name { get; set; }
         public SearchService Service { get; set; }
+        public Func<object, object> Value { get; set; }
         
         public QueryStringEncode(string qsName)
         {
@@ -25,6 +26,13 @@ namespace AliseeksApi.Utility.Attributes
         {
             this.Name = qsName;
             this.Service = service;
+        }
+
+        public QueryStringEncode(SearchService service, string qsName, Func<object, object> value)
+        {
+            this.Service = service;
+            this.Name = qsName;
+            this.Value = value;
         }
     }
 }
