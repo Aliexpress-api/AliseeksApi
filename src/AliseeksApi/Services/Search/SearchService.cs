@@ -10,6 +10,7 @@ using AliseeksApi.Storage.Postgres.Search;
 using AliseeksApi.Storage.Cache;
 using Newtonsoft.Json;
 using AliseeksApi.Utility.Extensions;
+using AliseeksApi.Models;
 
 namespace AliseeksApi.Services.Search
 {
@@ -35,58 +36,111 @@ namespace AliseeksApi.Services.Search
 
         public async Task CacheItems(SearchCriteria search)
         {
-            return;
+
         }
 
         public async Task<SearchResultOverview> SearchItems(SearchCriteria search)
         {
             //Check for cached item list
             string key = JsonConvert.SerializeObject(search);
+
             if (await cache.Exists(key))
             {
-                //AppTask.Forget(async () => await storeSearch(search, new List<Item>()));
-                return JsonConvert.DeserializeObject<SearchResultOverview>(await cache.GetString(key));
+                var cachedResult = JsonConvert.DeserializeObject<SearchResultOverview>(await cache.GetString(key));
+
+                //Make sure the next page range is cached
+
+                return cachedResult;
             }
-
-            //Send out search to seperate providers
-            var ali = aliexpress.SearchItems(search);
-            var dh = dhgate.SearchItems(search);
-
-            var results = await Task.WhenAll(ali, dh);
-
-            //Retrieve and organize the search by price
-            var items = new SearchResultOverview();
-            foreach(var result in results)
+            else
             {
-                items.SearchCount += result.SearchCount;
-                items.Items.AddRange(result.Items);
+                //First page search
+                //Send out search to seperate providers
+                var ali = aliexpress.SearchItems(search);
+                var dh = dhgate.SearchItems(search);
+
+                var results = await Task.WhenAll(ali, dh);
+
+                //Retrieve and organize the search by price
+                var items = new SearchResultOverview();
+                foreach (var result in results)
+                {
+                    items.SearchCount += result.SearchCount;
+                    items.Items.AddRange(result.Items);
+                }
+
+                var entire = new SearchResultOverview()
+                {
+                    Items = new List<Item>(items.Items),
+                    SearchCount = items.SearchCount
+                };
+
+                //Sort by price
+                items.Items = items.Items.OrderBy(x =>
+                {
+                    return x.Price.Length > 0 ? x.Price[0] : 1000;
+                }).Take(resultsPerPage).ToList();
+
+                //Cache the search and remaining pages
+                try
+                {
+                    await cache.StoreString(key, JsonConvert.SerializeObject(items));
+                }
+                catch (Exception e)
+                {
+                    var sentry = new SentryEvent(e);
+                    sentry.Message = $"Error when saving to cache: {e.Message}";
+
+                    await raven.CaptureNetCoreEventAsync(sentry);
+                }
+
+                //Cache the next pages 2 -> 5 & Store results in Postgres
+                int from = search.Page == null ? 2 : (int)search.Page;
+
+                var services = new List<SearchServiceModel>();
+
+                services.Add(new SearchServiceModel()
+                {
+                    Criteria = search,
+                    MaxPage = ali.Result.SearchCount / 47,
+                    Page = 1,
+                    Type = SearchServiceType.Aliexpress
+                });
+
+                services.Add(new SearchServiceModel()
+                {
+                    Criteria = search,
+                    MaxPage = dh.Result.SearchCount / 27,
+                    Page = 1,
+                    Type = SearchServiceType.DHGate
+                });
+
+                var cacheModel = new SearchCacheModel()
+                {
+                    Criteria = search,
+                    Items = entire.Items,
+                    PageFrom = from,
+                    PageTo = from + 5,
+                    Services = services.ToArray()
+                };
+
+                AppTask.Forget(async (cache, );
+                AppTask.Forget(async () => await storeSearch(JsonConvert.SerializeObject(search), entire.Items));
+
+                //Return the search
+                return items;
             }
+        }
 
-            //Sort by price
-            items.Items = items.Items.OrderBy(x => {
-                return x.Price.Length > 0 ? x.Price[0] : 1000;
-            }).Take(resultsPerPage).ToList();
+        private async Task startCacheJob(IApplicationCache cache, ISearchPostgres db, IAliexpressService aliexpress, IDHGateService dhgate,SearchCacheModel model)
+        {
+            var cacheJob = new SearchCache(cache, db, aliexpress, dhgate);
+            await cacheJob.RunCacheJob(model);
+        }
 
-            //Cache the search and remaining pages
-            try
-            {
-                await cache.StoreString(key, JsonConvert.SerializeObject(items));
-            }
-            catch (Exception e)
-            {
-                var sentry = new SentryEvent(e);
-                sentry.Message = $"Error when saving to cache: {e.Message}";
-
-                await raven.CaptureNetCoreEventAsync(sentry);
-            }
-
-            //Cache the next pages 2 -> 5 & Store results in Postgres
-            int from = search.Page == null ? 2 : (int)search.Page;
-            //AppTask.Forget(async () => await cacheSearchPages(search, from, from + 3));
-            //AppTask.Forget(async () => await storeSearch(search, items.Items));
-
-            //Return the search
-            return items;
+        private async Task storeSearch(string searchid, IEnumerable<Item> items)
+        {
+            await db.AddSearchCacheAsync(searchid, items);
         }
     }
 }

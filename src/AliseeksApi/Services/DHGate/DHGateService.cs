@@ -18,6 +18,8 @@ namespace AliseeksApi.Services.DHGate
         private readonly IApplicationCache cache;
         private readonly IRavenClient raven;
 
+        private string pageKey { get; set; }
+
         public DHGateService(IHttpService http, IApplicationCache cache, IRavenClient raven)
         {
             this.http = http;
@@ -39,7 +41,7 @@ namespace AliseeksApi.Services.DHGate
             //Get Paging Key if Page isn't 1
             if (search.Page != 1)
             {
-                pagingKey = await getPagingKey(qs);
+                pagingKey = pageKey;
                 endpoint = SearchEndpoints.DHGatePageUrl.Replace("{SEARCH}", search.SearchText.Replace(" ", "+")).Replace("{PAGE}", search.Page.ToString()).Replace("{KEY}", pagingKey);
             }
             else
@@ -63,31 +65,12 @@ namespace AliseeksApi.Services.DHGate
             return items;
         }
 
-        async Task<string> getPagingKey(string qs)
+        public async Task<SearchResultOverview> SearchItems(SearchCriteria search, string pagekey)
         {
-            if (await cache.Exists(qs))
-                return await cache.GetString(qs);
+            this.pageKey = pageKey;
+            var items = await searchItems(search);
 
-            string endpoint = SearchEndpoints.DHGateSearchUrl + qs;
-
-            try
-            {
-                var response = await http.Get(endpoint);
-
-                var decode = new DHGatePageDecoder();
-
-                decode.DecodePage(response);
-
-                return decode.PagingKey;
-            }
-            catch(Exception e)
-            {
-                var ev = new SentryEvent(e);
-
-                await raven.CaptureNetCoreEventAsync(e);
-
-                return "";
-            }
+            return items;
         }
     }
 }

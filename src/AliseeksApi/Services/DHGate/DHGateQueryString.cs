@@ -12,7 +12,7 @@ namespace AliseeksApi.Services.DHGate
     {
         public string Convert(SearchCriteria search)
         {
-            var qs = new QueryString();
+            var qs = new Dictionary<string, string>();
 
             qs.Add("searchkey", search.SearchText.Replace(" ", "+"));
 
@@ -32,7 +32,13 @@ namespace AliseeksApi.Services.DHGate
             if (search.FreeShipping.HasValue)
                 qs.Add("freeshipping", search.FreeShipping.Value.OneOrZero());
 
-            return qs.ToUriComponent().Substring(1);
+            var strings = new List<string>();
+            foreach (var key in qs.Keys)
+            {
+                strings.Add($"{key}={qs[key]}");
+            }
+
+            return String.Join("&", strings);
         }
     }
 }

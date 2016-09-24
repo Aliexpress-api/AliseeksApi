@@ -10,5 +10,7 @@ namespace AliseeksApi.Storage.Postgres.Search
     public interface ISearchPostgres
     {
         Task AddSearchAsync(SearchHistoryModel history, IEnumerable<ItemModel> items);
+        Task AddSearchCacheAsync(string searchid, IEnumerable<Item> items);
+        Task<IEnumerable<Item>> RetriveSearchCacheAsync(string searchid);
     }
 }

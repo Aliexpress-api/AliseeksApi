@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using AliseeksApi.Models.Search;
 using Microsoft.AspNetCore.Http;
 using AliseeksApi.Utility.Extensions;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace AliseeksApi.Services.Aliexpress
 {
@@ -12,7 +13,7 @@ namespace AliseeksApi.Services.Aliexpress
     {
         public string Convert(SearchCriteria search)
         {
-            var qs = new QueryString();
+            var qs = new Dictionary<string, string>();
 
             qs.Add("SearchText", search.SearchText.Replace(" ", "+"));
 
@@ -40,7 +41,13 @@ namespace AliseeksApi.Services.Aliexpress
             if (search.Page.HasValue)
                 qs.Add("page", search.Page.Value.ToString());
 
-            return qs.ToUriComponent().Substring(1);
+            var strings = new List<string>();
+            foreach(var key in qs.Keys)
+            {
+                strings.Add($"{key}={qs[key]}");
+            }
+
+            return String.Join("&", strings);
         }
     }
 }

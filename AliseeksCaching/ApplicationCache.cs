@@ -6,7 +6,7 @@ using StackExchange.Redis;
 
 namespace AliseeksApi.Storage.Cache
 {
-    public class ApplicationCache : IApplicationCache
+    public class ApplicationCache
     {
         IDatabase persistentDb;
 

@@ -20,38 +20,23 @@ namespace AliseeksApi.Services
     public class AliexpressService : IAliexpressService
     {
         IHttpService http;
-        IApplicationCache cache;
         ISearchPostgres db;
         IRavenClient raven;
-        AliseeksApi.Services.DHGate.IDHGateService dhgate;
 
-        public AliexpressService(IHttpService http, IApplicationCache cache, ISearchPostgres db, IRavenClient raven,
-            AliseeksApi.Services.DHGate.IDHGateService dhgate)
+        public AliexpressService(IHttpService http, ISearchPostgres db, IRavenClient raven)
         {
             this.http = http;
-            this.cache = cache;
             this.db = db;
             this.raven = raven;
-            this.dhgate = dhgate;
         }
 
         public async Task<SearchResultOverview> SearchItems(SearchCriteria search)
         {
             var items = await searchItems(search);
 
+            AppTask.Forget(async () => await storeSearch(search, items.Items));
+
             return items;
-        }
-
-        public async Task CacheItems(SearchCriteria search)
-        {
-            //Check for cached item list
-            string key = JsonConvert.SerializeObject(search);
-            if (await cache.Exists(key))
-                return;
-
-            var items = await searchItems(search);
-
-            await cache.StoreString(key, JsonConvert.SerializeObject(items));
         }
 
         //Store Search in DB
@@ -99,50 +84,6 @@ namespace AliseeksApi.Services
             }
         }
 
-        //Store Search in DB if we took the search from the cache
-        async Task storeSearchCached(SearchCriteria criteria)
-        {
-            var criteriaModel = new SearchHistoryModel()
-            {
-                User = criteria.Meta == null || criteria.Meta.User == null ? "Guest" : criteria.Meta.User,
-                Search = criteria.SearchText,
-                Meta = new SearchHistoryModelMeta()
-                {
-                    Criteria = criteria
-                }
-            };
-
-            try
-            {
-                await db.AddSearchAsync(criteriaModel, null);
-            }
-            catch (Exception e)
-            {
-                var sentry = new SentryEvent(e)
-                {
-                    Level = ErrorLevel.Warning,
-                    Message = $"Error when saving search results: {e.Message}"
-                };
-                await raven.CaptureNetCoreEventAsync(sentry);
-            }
-        }
-
-        async Task cacheSearchPages(SearchCriteria criteria, int from, int to)
-        {
-            //Create clone
-            SearchCriteria search = JsonConvert.DeserializeObject<SearchCriteria>(JsonConvert.SerializeObject(criteria));
-
-            //Cache search results for pages FROM to TO
-            for(int i = from; i != to; i++)
-            {
-                search.Page = i;
-                string key = JsonConvert.SerializeObject(search);
-                if (await cache.Exists(key)) { continue; }
-                var items = await searchItems(search);
-                await cache.StoreString(JsonConvert.SerializeObject(search), JsonConvert.SerializeObject(items));
-            }
-        }
-
         //Function that actually goes out and gets Aliexpress search and converts it
         async Task<SearchResultOverview> searchItems(SearchCriteria search)
         {
@@ -174,6 +115,11 @@ namespace AliseeksApi.Services
             }
 
             return items;
+        }
+
+        public Task CacheItems(SearchCriteria search)
+        {
+            throw new NotImplementedException();
         }
     }
 }
