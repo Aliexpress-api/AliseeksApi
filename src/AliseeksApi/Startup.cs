@@ -31,6 +31,8 @@ using Microsoft.AspNetCore.Http;
 using SharpRaven.Core.Configuration;
 using SharpRaven.Core;
 using AliseeksApi.Services.DHGate;
+using Hangfire;
+using Hangfire.PostgreSql;
 
 namespace AliseeksApi
 {
@@ -67,6 +69,10 @@ namespace AliseeksApi
             services.Configure<RavenOptions>(Configuration.GetSection("RavenOptions"));
 
             configureDependencyInjection(services);
+
+            //Add Hangfire with PostgresDb
+            var postgresConfig = services.BuildServiceProvider().GetRequiredService<IOptions<PostgresOptions>>().Value;
+            services.AddHangfire(x => { x.UseStorage(new PostgreSqlStorage($"Host={postgresConfig.Host};Port={postgresConfig.Port};Username={postgresConfig.Username};Password={postgresConfig.Password};Database={postgresConfig.Database}")); });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -78,6 +84,10 @@ namespace AliseeksApi
             app.UseMiddleware<ExceptionHandler>();
 
             app.ApplyApiLogging();
+
+            //Configure Hangfire
+            app.UseHangfireServer();
+            app.UseHangfireDashboard();
 
             var jwtOptions = app.ApplicationServices.GetService<IOptions<JwtOptions>>().Value;
             app.UseJwtBearerAuthentication(new JwtBearerOptions()
@@ -100,8 +110,11 @@ namespace AliseeksApi
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
             //Configure Redis Cache
-            var redisConfig = serviceProvider.GetService<IOptions<RedisOptions>>();
-            services.AddSingleton<IConnectionMultiplexer>(new RedisCache(redisConfig).Connect());
+            services.AddSingleton<IConnectionMultiplexer>((provider) =>
+            {
+                var config = provider.GetRequiredService<IOptions<RedisOptions>>();
+                return new RedisCache(config).Connect();
+            });
             services.AddScoped<IDatabase>(x => x.GetService<IConnectionMultiplexer>().GetDatabase());
 
             //Configure Postgres
@@ -121,14 +134,24 @@ namespace AliseeksApi
             });
 
             services.AddTransient<IApplicationCache, ApplicationCache>();
-            services.AddTransient<IAliexpressService, AliexpressService>();
-            services.AddTransient<IDHGateService, DHGateService>();
+            services.AddTransient<AliexpressService, AliexpressService>();
+            services.AddTransient<DHGateService, DHGateService>();
             services.AddTransient<ISearchService, SearchService>();
             services.AddTransient<IHttpService, HttpService>();
             services.AddTransient<IEmailService, EmailService>();
             services.AddTransient<IJwtFactory, AliseeksJwtAuthentication>();
             services.AddTransient<IUserService, UserService>();
             services.AddTransient<ILoggingService, LoggingService>();
+
+            services.AddTransient<WebSearchService[]>((provider) =>
+            {
+                var webServices = new List<WebSearchService>();
+                webServices.Add(provider.GetRequiredService<AliexpressService>());
+
+                return webServices.ToArray();
+            });
+
+            services.AddTransient<SearchCache, SearchCache>();
 
             //Add Utilities
             services.AddTransient<ISecurityHasher, SecurityHasher>();

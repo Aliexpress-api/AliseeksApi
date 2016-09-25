@@ -9,7 +9,6 @@ namespace AliseeksApi.Services
 {
     public interface IAliexpressService
     {
-        Task<SearchResultOverview> SearchItems(SearchCriteria search);
-        Task CacheItems(SearchCriteria search);
+
     }
 }

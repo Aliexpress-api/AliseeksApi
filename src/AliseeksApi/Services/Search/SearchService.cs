@@ -11,6 +11,8 @@ using AliseeksApi.Storage.Cache;
 using Newtonsoft.Json;
 using AliseeksApi.Utility.Extensions;
 using AliseeksApi.Models;
+using Hangfire;
+using AliseeksApi.Utility;
 
 namespace AliseeksApi.Services.Search
 {
@@ -18,20 +20,20 @@ namespace AliseeksApi.Services.Search
     {
         private const int resultsPerPage = 27;
 
-        private readonly IAliexpressService aliexpress;
-        private readonly IDHGateService dhgate;
+        private readonly WebSearchService[] services;
         private readonly IRavenClient raven;
         private readonly ISearchPostgres db;
         private readonly IApplicationCache cache;
+        private readonly SearchCache searchCache;
 
-        public SearchService(IAliexpressService aliexpress, IDHGateService dhgate, ISearchPostgres db,
-            IApplicationCache cache, IRavenClient raven)
+        public SearchService(WebSearchService[] services, ISearchPostgres db,
+            IApplicationCache cache, IRavenClient raven, SearchCache searchCache)
         {
-            this.aliexpress = aliexpress;
-            this.dhgate = dhgate;
             this.raven = raven;
             this.db = db;
             this.cache = cache;
+            this.services = services;
+            this.searchCache = searchCache;
         }
 
         public async Task CacheItems(SearchCriteria search)
@@ -42,105 +44,32 @@ namespace AliseeksApi.Services.Search
         public async Task<SearchResultOverview> SearchItems(SearchCriteria search)
         {
             //Check for cached item list
-            string key = JsonConvert.SerializeObject(search);
+            string key = RedisKeyConvert.Serialize(search);
+
+            SearchResultOverview result = null;
 
             if (await cache.Exists(key))
             {
                 var cachedResult = JsonConvert.DeserializeObject<SearchResultOverview>(await cache.GetString(key));
 
-                //Make sure the next page range is cached
-
-                return cachedResult;
+                result = cachedResult;
             }
             else
             {
-                //First page search
-                //Send out search to seperate providers
-                var ali = aliexpress.SearchItems(search);
-                var dh = dhgate.SearchItems(search);
+                await SearchServiceProvider.RetrieveSearchServices(services, cache, search, allNew: true);
 
-                var results = await Task.WhenAll(ali, dh);
+                var results = await SearchDispatcher.Search(services, new int[] { search.Page });
 
-                //Retrieve and organize the search by price
-                var items = new SearchResultOverview();
-                foreach (var result in results)
-                {
-                    items.SearchCount += result.SearchCount;
-                    items.Items.AddRange(result.Items);
-                }
+                var formattedResults = SearchFormatter.FormatResults(0, results);
+                                                               
+                await searchCache.CacheSearch(search, services, formattedResults.Results);
 
-                var entire = new SearchResultOverview()
-                {
-                    Items = new List<Item>(items.Items),
-                    SearchCount = items.SearchCount
-                };
-
-                //Sort by price
-                items.Items = items.Items.OrderBy(x =>
-                {
-                    return x.Price.Length > 0 ? x.Price[0] : 1000;
-                }).Take(resultsPerPage).ToList();
-
-                //Cache the search and remaining pages
-                try
-                {
-                    await cache.StoreString(key, JsonConvert.SerializeObject(items));
-                }
-                catch (Exception e)
-                {
-                    var sentry = new SentryEvent(e);
-                    sentry.Message = $"Error when saving to cache: {e.Message}";
-
-                    await raven.CaptureNetCoreEventAsync(sentry);
-                }
-
-                //Cache the next pages 2 -> 5 & Store results in Postgres
-                int from = search.Page == null ? 2 : (int)search.Page;
-
-                var services = new List<SearchServiceModel>();
-
-                services.Add(new SearchServiceModel()
-                {
-                    Criteria = search,
-                    MaxPage = ali.Result.SearchCount / 47,
-                    Page = 1,
-                    Type = SearchServiceType.Aliexpress
-                });
-
-                services.Add(new SearchServiceModel()
-                {
-                    Criteria = search,
-                    MaxPage = dh.Result.SearchCount / 27,
-                    Page = 1,
-                    Type = SearchServiceType.DHGate
-                });
-
-                var cacheModel = new SearchCacheModel()
-                {
-                    Criteria = search,
-                    Items = entire.Items,
-                    PageFrom = from,
-                    PageTo = from + 5,
-                    Services = services.ToArray()
-                };
-
-                AppTask.Forget(async (cache, );
-                AppTask.Forget(async () => await storeSearch(JsonConvert.SerializeObject(search), entire.Items));
-
-                //Return the search
-                return items;
+                result = formattedResults.Results;
             }
-        }
 
-        private async Task startCacheJob(IApplicationCache cache, ISearchPostgres db, IAliexpressService aliexpress, IDHGateService dhgate,SearchCacheModel model)
-        {
-            var cacheJob = new SearchCache(cache, db, aliexpress, dhgate);
-            await cacheJob.RunCacheJob(model);
-        }
+            searchCache.StartCacheJob(search, null);
 
-        private async Task storeSearch(string searchid, IEnumerable<Item> items)
-        {
-            await db.AddSearchCacheAsync(searchid, items);
+            return result;
         }
     }
 }

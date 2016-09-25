@@ -15,12 +15,12 @@ namespace AliseeksApi.Utility
             var builder = new List<string>();
             var propertyInfo = model.GetType().GetProperties();
 
-            builder.Add(model.GetType().FullName);
+            builder.Add(model.GetType().Name);
 
             foreach(var property in propertyInfo)
             {
                 var ignore = property.GetCustomAttribute<RedisIgnore>();
-                if (ignore != null && schema == null)
+                if (ignore != null && ignore.Schema == null)
                     continue;
 
                 if (ignore != null && schema == ignore.Schema)
@@ -28,7 +28,9 @@ namespace AliseeksApi.Utility
 
                 var val = property.GetValue(model);
                 var def = property.GetCustomAttribute<RedisDefault>();
-                if (val == def.Value)
+                if (def != null && val == def.Value)
+                    continue;
+                if (val == null)
                     continue;
 
                 builder.Add(val.ToString());

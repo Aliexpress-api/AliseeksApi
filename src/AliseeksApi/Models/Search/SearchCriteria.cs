@@ -31,7 +31,7 @@ namespace AliseeksApi.Models.Search
         public bool? AppOnly { get; set; }
 
         [RedisIgnore("servicekey")]
-        public int? Page { get; set; }
+        public int Page { get; set; }
 
         [JsonIgnore]
         [RedisIgnore]

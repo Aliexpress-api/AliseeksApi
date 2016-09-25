@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using AliseeksApi.Models.Search;
 using AliseeksApi.Utility.Extensions;
+using AliseeksApi.Utility;
 
 namespace AliseeksApi.Services.DHGate
 {
@@ -38,7 +39,12 @@ namespace AliseeksApi.Services.DHGate
                 strings.Add($"{key}={qs[key]}");
             }
 
-            return String.Join("&", strings);
+            return SearchEndpoints.DHGateSearchUrl + String.Join("&", strings);
+        }
+
+        public string ConvertWithPage(SearchServiceModel search, string pagekey)
+        {
+            return SearchEndpoints.DHGatePageUrl.Replace("{SEARCH}", search.Criteria.SearchText.Replace(" ", "+")).Replace("{PAGE}", (search.Page + 1).ToString()).Replace("{KEY}", pagekey);
         }
     }
 }

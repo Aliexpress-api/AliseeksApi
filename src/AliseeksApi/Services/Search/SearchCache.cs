@@ -10,96 +10,142 @@ using AliseeksApi.Services.Aliexpress;
 using AliseeksApi.Services.DHGate;
 using AliseeksApi.Utility;
 using Newtonsoft.Json;
+using SharpRaven.Core;
+using SharpRaven.Core.Data;
+using AliseeksApi.Utility.Extensions;
+using Hangfire;
 
 namespace AliseeksApi.Services.Search
 {
     public class SearchCache
     {
-        private const int resultsPerPage = 27;
         private readonly IApplicationCache cache;
         private readonly ISearchPostgres db;
-        private readonly IAliexpressService ali;
-        private readonly IDHGateService dhgate;
+        private readonly IRavenClient raven;
+        private readonly WebSearchService[] webServices;
 
-        public SearchCache(IApplicationCache cache, ISearchPostgres db, IAliexpressService ali, IDHGateService dhgate)
+        public SearchCache(IApplicationCache cache, ISearchPostgres db, WebSearchService[] services, IRavenClient raven)
         {
             this.cache = cache;
             this.db = db;
-            this.ali = ali;
-            this.dhgate = dhgate;
+            this.raven = raven;
+            this.webServices = services;
+        }
+
+        public async Task CacheSearch(SearchCriteria criteria, WebSearchService[] services, SearchResultOverview result)
+        {
+            var key = RedisKeyConvert.Serialize(criteria);
+
+            //Cache the search & service models
+            try
+            {
+                await cacheItemSearch(criteria, result);
+                await cacheServices(services);
+
+            }
+            catch (Exception e)
+            {
+                var sentry = new SentryEvent(e);
+                sentry.Message = $"Error when saving to cache: {e.Message}";
+
+                await raven.CaptureNetCoreEventAsync(sentry);
+            }
+        }
+
+        public void StartCacheJob(SearchCriteria criteria, IEnumerable<Item> items = null)
+        {
+            var cacheModel = new SearchCacheModel()
+            {
+                Criteria = criteria,
+                Items = (items != null) ? items : new List<Item>(),
+                PageFrom = criteria.Page,
+                PageTo = criteria.Page + 4,
+                Services = null
+            };
+
+            BackgroundJob.Enqueue<SearchCache>(x => x.RunCacheJob(cacheModel));
         }
 
         public async Task RunCacheJob(SearchCacheModel model)
         {
             List<Task<SearchResultOverview>> searchJobs = new List<Task<SearchResultOverview>>();
-            
-            //Go through each search service
-            foreach(SearchServiceModel service in model.Services)
-            { 
-                //Start tasks to update item list from currently cached item page to either max page or page to
-                for(int i = service.Page + 1; i <= model.PageTo && i <= service.MaxPage; i++)
-                {
-                    switch(service.Type)
-                    {
-                        case SearchServiceType.Aliexpress:
-                            searchJobs.Add(ali.SearchItems(model.Criteria));
-                            break;
 
-                        case SearchServiceType.DHGate:
-                            searchJobs.Add(dhgate.SearchItems(model.Criteria, service.PageKey));
-                            break;
-                    }                    
-                }
+            var criteria = JsonConvert.DeserializeObject<SearchCriteria>(JsonConvert.SerializeObject(model.Criteria));
+            criteria.Page = model.PageFrom;
 
-                //Update the current service page
-                service.Page = model.PageTo;
+            await SearchServiceProvider.RetrieveSearchServices(webServices, cache, criteria);
 
-                //Store the latest search service state
-                await cache.StoreString(RedisKeyConvert.Serialize(model.Criteria, "servicekey"), JsonConvert.SerializeObject(service));
-            }
-
-            //Retrive current cached items in postgres
-            var items = (await db.RetriveSearchCacheAsync(RedisKeyConvert.Serialize(model, schema: "servicekey"))).ToList();
-            var newItems = new List<Item>();
-            var results = await Task.WhenAll<SearchResultOverview>(searchJobs);
-
-            //Add new items to new list and existing list
-            foreach(var result in results)
+            var pages = new List<int>();
+            for(int from = model.PageFrom; from <= model.PageTo; from++)
             {
-                items.AddRange(result.Items);
-                newItems.AddRange(result.Items);
+                if (!await existItemSearch(criteria, from))
+                    pages.Add(from);
             }
 
-            //Sort by price
-            items = items.OrderBy(x => x.Price.Length > 0 ? x.Price[0] : int.MaxValue).ToList();
+            var resultsTask = SearchDispatcher.Search(webServices, pages.ToArray());
 
-            //Sum the distinct search counts
-            var searchCount = 0;
-            var searchDistinct = results.GroupBy(x => x.SearchCount).Select(grp => grp.First());
-            foreach(var s in searchDistinct)
-            {
-                searchCount += s.SearchCount;
-            }
+            var uncertain = JsonConvert.DeserializeObject<Item[]>(await getUncertain(criteria));
 
-            //Create a shallow copy of the criteria model
-            var crit = JsonConvert.DeserializeObject<SearchCriteria>(JsonConvert.SerializeObject(model.Criteria));
+            var results = await resultsTask;
+
+            results.Items.AddRange(uncertain);
 
             //Cache the pages asked
-            for (int from = model.PageFrom; from < model.PageTo; from++)
+            for (int from = model.PageFrom; from <= (model.PageFrom - 1) + results.Items.Count / SearchFormatter.ResultsPerPage; from++)
             {
-                var result = new SearchResultOverview()
-                {
-                    SearchCount = searchCount,
-                    Items = items.Skip(from * resultsPerPage).Take(resultsPerPage).ToList()
-                };
-
-                crit.Page = from;
-
-                await cache.StoreString(JsonConvert.SerializeObject(crit), JsonConvert.SerializeObject(result));
+                criteria.Page = from;
+                await cacheItemSearch(criteria, SearchFormatter.FormatResults(from - model.PageFrom, results).Results);
             }
 
-            //Store the new items into the Postgres cache
-            await db.AddSearchCacheAsync(RedisKeyConvert.Serialize(model.Criteria, "servicekey"), newItems);
+            var leftOver = results.Items.Skip((results.Items.Count / SearchFormatter.ResultsPerPage) * SearchFormatter.ResultsPerPage);
+
+            //Cache the states of the web services
+            await cacheServices(webServices);
+
+            await cacheUncertain(criteria, leftOver);
+        }
+
+        async Task cacheServices(WebSearchService[] services)
+        {
+            foreach (WebSearchService service in services)
+            {
+                var serviceKey = service.ServiceModel.GetRedisKey();
+                await cache.StoreString(serviceKey, JsonConvert.SerializeObject(service.ServiceModel));
+            }
+        }
+
+        async Task cacheItemSearch(SearchCriteria criteria, SearchResultOverview result)
+        {
+            var key = RedisKeyConvert.Serialize(criteria);
+
+            await cache.StoreString(key, JsonConvert.SerializeObject(result));
+        }
+
+        async Task<bool> existItemSearch(SearchCriteria criteria, int page)
+        {
+            var crit = JsonConvert.DeserializeObject<SearchCriteria>(JsonConvert.SerializeObject(criteria));
+
+            crit.Page = page;
+
+            var key = RedisKeyConvert.Serialize(crit);
+
+            return await cache.Exists(key);
+        }
+
+        async Task cacheUncertain(SearchCriteria criteria, IEnumerable<Item> items)
+        {
+            var key = $"{RedisKeyConvert.Serialize(criteria, "servicekey")}:uncertain";
+
+            await cache.StoreString(key, JsonConvert.SerializeObject(items));
+        }
+
+        async Task<string> getUncertain(SearchCriteria criteria)
+        {
+            var key = $"{RedisKeyConvert.Serialize(criteria, "servicekey")}:uncertain";
+
+            var items = await cache.GetString(key);
+
+            return items ?? "[]";
         }
     }
 }

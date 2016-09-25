@@ -50,6 +50,8 @@ namespace AliseeksApi.Services.DHGate
                         searchResultOverview.Items.Add(item);
                     }
 
+                    searchResultOverview.Extra.Add("PagingKey", PagingKey);
+
                     return searchResultOverview;
                 }
                 else

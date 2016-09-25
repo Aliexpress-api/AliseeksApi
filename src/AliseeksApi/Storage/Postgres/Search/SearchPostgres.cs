@@ -15,11 +15,9 @@ namespace AliseeksApi.Storage.Postgres.Search
         const string searchHistoryTable = "searchhistory";
         const string itemHistoryInsertColumns = "itemid, price, quantity, seller, meta, lotprice, currency, title, source";
         const string itemHistoryTable = "itemhistory";
-        const string searchCacheInsertColumns = @"searchid, itemid, currency, link, title, price, quantity, shippingprice,
-            unit, lotprice, freeshipping, imageurl, mobileonly, storename, toprateseller, feedback, orders, source";
+        const string searchCacheInsertColumns = @"searchid, itemid, currency, link, title, price, quantity, shippingprice, unit, lotprice, freeshipping, imageurl, mobileonly, storename, toprateseller, feedback, orders, source";
         const string searchCacheTable = "searchcache";
-        const string searchCacheSelectColumns = @"itemid, currency, link, title, price, quantity, shippingprice,
-            unit, lotprice, freeshipping, imageurl, mobileonly, storename, toprateseller, feedback, orders, source";
+        const string searchCacheSelectColumns = @"itemid, currency, link, title, price, quantity, shippingprice, unit, lotprice, freeshipping, imageurl, mobileonly, storename, toprateseller, feedback, orders, source";
 
         IPostgresDb db;
 
@@ -64,82 +62,6 @@ namespace AliseeksApi.Storage.Postgres.Search
                     command.ExecuteNonQuery();
                 }
             });
-        }
-
-        public async Task AddSearchCacheAsync(string searchid, IEnumerable<Item> items)
-        {
-            await db.TransactionAsync(transaction =>
-            {
-                foreach (var item in items)
-                {
-                    var cmdParameters = @"@searchid, @itemid, @currency, @link, @title, @price, @quantity, @shippingprice, @unit,
-                    @lotprice, @freeshipping, @imageurl, @mobileonly, @storename, @toprateseller, @feedback, @orders, @source";
-                    var command = new NpgsqlCommand();
-                    command.Transaction = transaction;
-                    command.Connection = transaction.Connection;
-                    command.CommandText = $@"INSERT INTO {searchCacheInsertColumns} 
-                        ({searchCacheTable})
-                        VALUES ({cmdParameters});";
-                    command.Parameters.AddWithValue("@searchid", searchid);
-                    command.Parameters.AddWithValue("@itemid", item.ItemID);
-                    command.Parameters.AddWithValue("@currency", item.Currency);
-                    command.Parameters.AddWithValue("@link", item.Link);
-                    command.Parameters.AddWithValue("@title", item.Name);
-                    command.Parameters.AddWithValue("@price", item.Price);
-                    command.Parameters.AddWithValue("@quantity", item.Quantity);
-                    command.Parameters.AddWithValue("@shippingprice", item.ShippingPrice);
-                    command.Parameters.AddWithValue("@unit", item.Unit);
-                    command.Parameters.AddWithValue("@lotprice", item.LotPrice);
-                    command.Parameters.AddWithValue("@freeshipping", item.FreeShipping);
-                    command.Parameters.AddWithValue("@imageurl", item.ImageURL);
-                    command.Parameters.AddWithValue("@mobileonly", item.MobileOnly);
-                    command.Parameters.AddWithValue("@storename", item.StoreName);
-                    command.Parameters.AddWithValue("@topratedseller", item.TopRatedSeller);
-                    command.Parameters.AddWithValue("@feedback", item.Feedback);
-                    command.Parameters.AddWithValue("@order", item.Orders);
-
-                    command.ExecuteNonQuery();
-                }
-            });
-        }
-
-        public async Task<IEnumerable<Item>> RetriveSearchCacheAsync(string searchid)
-        {
-            var items = new List<Item>();
-
-            var command = new NpgsqlCommand();
-            command.CommandText = $"SELECT {searchCacheSelectColumns} FROM {searchCacheTable} WHERE searchid=@searchid";
-            command.Parameters.AddWithValue("@searchid", searchid);
-
-            await db.CommandReaderAsync(command, reader =>
-            {
-                while(reader.Read())
-                {
-                    int o = 0;
-                    var item = new Item();
-                    item.ItemID = reader.GetString(o++);
-                    item.Currency = reader.GetString(o++);
-                    item.Link = reader.GetString(o++);
-                    item.Name = reader.GetString(o++);
-                    item.Price = reader[o++] as decimal[];
-                    item.Quantity = reader.GetInt32(o++);
-                    item.ShippingPrice = reader.GetDecimal(o++);
-                    item.Unit = reader.GetString(o++);
-                    item.LotPrice = reader.GetDecimal(o++);
-                    item.FreeShipping = reader.GetBoolean(o++);
-                    item.ImageURL = reader.GetString(o++);
-                    item.StoreName = reader.GetString(o++);
-                    item.TopRatedSeller = reader.GetBoolean(o++);
-                    item.Feedback = reader.GetInt32(o++);
-                    item.Orders = reader.GetInt32(o++);
-                    item.Source = reader.GetString(o++);
-
-                    items.Add(item);
-                }
-
-            });
-
-            return items;
         }
     }
 }

@@ -30,6 +30,8 @@
     "Moq": "4.6.38-alpha",
     "Microsoft.AspNetCore.TestHost": "1.0.0",
     "AsyncStackTraceEx": "1.0.1.1",
+    "Hangfire": "1.6.5",
+    "Hangfire.PostgreSql.NetCore": "1.4.3",
 
     //Custom DLLs
     "RavenSharp.Core": "1.0.0-beta-1"
@@ -62,7 +64,7 @@
  
   "runtimes" : {
      "ubuntu.14.04-x64": {},
-     "ubuntu.15.10-x64": {}
+     "ubuntu.16.04-x64": {}
   },
 
   "publishOptions": {
