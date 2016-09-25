@@ -9,6 +9,6 @@ namespace AliseeksApi.Services.Search
     public interface ISearchService
     {
         Task<SearchResultOverview> SearchItems(SearchCriteria search);
-        Task CacheItems(SearchCriteria search);
+        void CacheItems(SearchCriteria search);
     }
 }

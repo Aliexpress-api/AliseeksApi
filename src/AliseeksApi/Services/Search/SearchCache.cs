@@ -52,14 +52,14 @@ namespace AliseeksApi.Services.Search
             }
         }
 
-        public void StartCacheJob(SearchCriteria criteria, IEnumerable<Item> items = null)
+        public void StartCacheJob(SearchCriteria criteria, IEnumerable<Item> items = null, int pages = 4)
         {
             var cacheModel = new SearchCacheModel()
             {
                 Criteria = criteria,
                 Items = (items != null) ? items : new List<Item>(),
                 PageFrom = criteria.Page,
-                PageTo = criteria.Page + 4,
+                PageTo = criteria.Page + pages,
                 Services = null
             };
 

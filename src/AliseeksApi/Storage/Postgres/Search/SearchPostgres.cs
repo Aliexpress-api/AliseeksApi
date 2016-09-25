@@ -26,7 +26,7 @@ namespace AliseeksApi.Storage.Postgres.Search
             this.db = db;
         }
 
-        public async Task AddSearchAsync(SearchHistoryModel history, IEnumerable<ItemModel> items)
+        public async Task AddSearchAsync(SearchHistoryModel history)
         {
             await db.TransactionAsync(transaction =>
             {
@@ -39,7 +39,13 @@ namespace AliseeksApi.Storage.Postgres.Search
                 cmd.Parameters.AddWithValue("@meta", NpgsqlTypes.NpgsqlDbType.Jsonb, (history.Meta == null) ? "" : JsonConvert.SerializeObject(history.Meta));
                 cmd.Parameters.AddWithValue("@username", history.User);
                 cmd.ExecuteNonQuery();
+            });
+        }
 
+        public async Task AddItemsAsync(IEnumerable<ItemModel> items)
+        {
+            await db.TransactionAsync(transaction =>
+            {
                 foreach (var item in items)
                 {
                     var parameters = "@itemid, @price, @quantity, @seller, @meta, @lotprice, @currency, @title, @source";

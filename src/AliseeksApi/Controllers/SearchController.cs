@@ -38,6 +38,11 @@ namespace AliseeksApi.Controllers
                 {
                     User = HttpContext.User.FindFirst(ClaimTypes.Name).Value
                 };
+            else
+                search.Meta = new SearchCriteriaMeta()
+                {
+                    User = "Guest"
+                };
 
             var response = await this.search.SearchItems(search);
 
@@ -48,7 +53,7 @@ namespace AliseeksApi.Controllers
 
         [HttpGet]
         [Route("/api/[controller]/cache")]
-        public async Task<IActionResult> Cache([FromQuery]SearchCriteria search)
+        public IActionResult Cache([FromQuery]SearchCriteria search)
         {
             if (HttpContext.User.Identity.IsAuthenticated)
                 search.Meta = new SearchCriteriaMeta()
@@ -56,7 +61,7 @@ namespace AliseeksApi.Controllers
                     User = HttpContext.User.FindFirst(ClaimTypes.Name).Value
                 };
 
-            await this.search.CacheItems(search);
+            this.search.CacheItems(search);
             return Ok();
         }
     }

@@ -40,7 +40,7 @@ namespace AliseeksApi.Services.Aliexpress
             if (search.AppOnly.HasValue)
                 qs.Add("isMobileExclusive", search.AppOnly.Value.YesOrNo());
 
-            qs.Add("page", (model.Page + 1).ToString());
+            qs.Add("page", (model.Page).ToString());
 
             var strings = new List<string>();
             foreach(var key in qs.Keys)

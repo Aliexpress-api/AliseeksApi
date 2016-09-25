@@ -15,6 +15,7 @@ using SharpRaven.Core.Data;
 using SharpRaven.Core;
 using AliseeksApi.Services.Search;
 using AliseeksApi.Services.Aliexpress;
+using Hangfire;
 
 namespace AliseeksApi.Services
 {
@@ -101,6 +102,9 @@ namespace AliseeksApi.Services
                     await raven.CaptureNetCoreEventAsync(sentry);
                 }
             }
+
+            if(results != null && results.Items.Count > 0)
+                StoreSearchItems(results.Items);
 
             return (results != null) ? results : new SearchResultOverview();
         }

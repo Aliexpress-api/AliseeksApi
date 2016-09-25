@@ -36,9 +36,9 @@ namespace AliseeksApi.Services.Search
             this.searchCache = searchCache;
         }
 
-        public async Task CacheItems(SearchCriteria search)
+        public void CacheItems(SearchCriteria search)
         {
-
+            searchCache.StartCacheJob(search, null, 0);
         }
 
         public async Task<SearchResultOverview> SearchItems(SearchCriteria search)
@@ -48,28 +48,52 @@ namespace AliseeksApi.Services.Search
 
             SearchResultOverview result = null;
 
-            if (await cache.Exists(key))
+            try
             {
-                var cachedResult = JsonConvert.DeserializeObject<SearchResultOverview>(await cache.GetString(key));
+                storeSearchHistory(search);
 
-                result = cachedResult;
+                if (await cache.Exists(key))
+                {
+                    var cachedResult = JsonConvert.DeserializeObject<SearchResultOverview>(await cache.GetString(key));
+
+                    result = cachedResult;
+                }
+                else
+                {
+                    await SearchServiceProvider.RetrieveSearchServices(services, cache, search, allNew: true);
+
+                    var results = await SearchDispatcher.Search(services, new int[] { search.Page });
+
+                    var formattedResults = SearchFormatter.FormatResults(0, results);
+
+                    await searchCache.CacheSearch(search, services, formattedResults.Results);
+
+                    result = formattedResults.Results;
+                }
+
+                searchCache.StartCacheJob(search, null);
             }
-            else
+            catch(Exception e)
             {
-                await SearchServiceProvider.RetrieveSearchServices(services, cache, search, allNew: true);
-
-                var results = await SearchDispatcher.Search(services, new int[] { search.Page });
-
-                var formattedResults = SearchFormatter.FormatResults(0, results);
-                                                               
-                await searchCache.CacheSearch(search, services, formattedResults.Results);
-
-                result = formattedResults.Results;
+               await raven.CaptureNetCoreEventAsync(e);
             }
-
-            searchCache.StartCacheJob(search, null);
 
             return result;
+        }
+
+        void storeSearchHistory(SearchCriteria search)
+        {
+            var model = new SearchHistoryModel()
+            {
+                Search = search.SearchText,
+                User = search.Meta.User,
+                Meta = new SearchHistoryModelMeta()
+                {
+                    Criteria = search
+                }
+            };
+
+            BackgroundJob.Enqueue<ISearchPostgres>(db => db.AddSearchAsync(model));
         }
     }
 }

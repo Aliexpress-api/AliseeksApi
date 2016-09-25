@@ -22,6 +22,7 @@ using Microsoft.Extensions.Options;
 using AliseeksApi.Storage.Postgres;
 using AliseeksApi.Storage.Postgres.Users;
 using AliseeksApi.Storage.Postgres.Search;
+using AliseeksApi.Storage.Postgres.Feedback;
 using AliseeksApi.Utility.Security;
 using AliseeksApi.Services.Logging;
 using AliseeksApi.Storage.Postgres.Logging;
@@ -122,6 +123,7 @@ namespace AliseeksApi
             services.AddTransient<IUsersPostgres, UsersPostgres>();
             services.AddTransient<ISearchPostgres, SearchPostgres>();
             services.AddTransient<ILoggingPostgres, LoggingPostgres>();
+            services.AddTransient<IFeedbackPostgres, FeedbackPostgres>();
 
             //Configure RavenClient
             services.AddScoped<IRavenClient, RavenClient>((s) => {
