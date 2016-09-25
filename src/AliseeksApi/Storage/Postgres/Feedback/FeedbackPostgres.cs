@@ -20,6 +20,7 @@ namespace AliseeksApi.Storage.Postgres.Feedback
         public FeedbackPostgres(IPostgresDb db, IRavenClient raven)
         {
             this.db = db;
+            this.raven = raven;
         }
 
         public async Task InsertFeedback(FeedbackModel model)
