@@ -148,6 +148,15 @@ namespace AliseeksApi.Utility
 			 </dd>
 			 */
 			var shippingPriceElement = node.Descendants().FirstOrDefault(x => x.Name == "dd" && x.Attributes.Contains("class") && x.Attributes["class"].Value == "price");
+            var shippingTypeElement = node.Descendants().FirstOrDefault(x => x.Name == "dd");
+
+            if(shippingTypeElement != null)
+            {
+                var shippingTypeText = shippingTypeElement.InnerText;
+                var viaIndex = shippingTypeText.IndexOf("via");
+                shippingTypeText = shippingTypeText.Substring(viaIndex).Replace("via", "").Trim();
+                item.ShippingType = shippingTypeText;
+            }
 
 			if (nameElement != null)
 			{
