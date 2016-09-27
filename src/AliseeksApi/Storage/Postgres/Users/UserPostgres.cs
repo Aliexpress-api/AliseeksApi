@@ -177,27 +177,19 @@ namespace AliseeksApi.Storage.Postgres.Users
         {
             UserOverviewModel overview = new UserOverviewModel();
             var command = new NpgsqlCommand();
-            command.CommandText = $"SELECT {userSecureSelectColumns},{savedSearchSelectColumns} FROM {userTable} JOIN {savedSearchTable} on {userTable}.username = {savedSearchTable}.username WHERE username=@username;";
+            command.CommandText = $"SELECT {savedSearchSelectColumns} FROM {savedSearchTable} WHERE username=@username;";
             command.Parameters.AddWithValue("username", username);
 
             var savedSearches = new List<SavedSearchModel>();
 
-            await db.TransactionAsync(transaction =>
+            await db.CommandReaderAsync(command, reader =>
             {
-                command.Transaction = transaction;
-                var reader = command.ExecuteReader();
+                int ordinal = 0;
+                var savedSearch = new SavedSearchModel();
+                savedSearch.Created = reader.GetDateTime(ordinal++);
+                savedSearch.Criteria = JsonConvert.DeserializeObject<SearchCriteria>(reader.GetString(ordinal++));
 
-                while(reader.Read())
-                {
-                    int ordinal = 0;
-                    var savedSearch = new SavedSearchModel();
-                    savedSearch.Created = reader.GetDateTime(ordinal++);
-                    savedSearch.Criteria = JsonConvert.DeserializeObject<SearchCriteria>(reader.GetString(ordinal++));
-
-                    savedSearches.Add(savedSearch);
-                }
-
-                transaction.Commit();                
+                savedSearches.Add(savedSearch);
             });
 
             overview.Username = username;
