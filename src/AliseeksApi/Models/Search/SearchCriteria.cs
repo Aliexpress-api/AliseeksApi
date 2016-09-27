@@ -15,6 +15,9 @@ namespace AliseeksApi.Models.Search
 
         public double? PriceTo { get; set; }
 
+        public int? QuantityMin { get; set; }
+        public int? QuantityMax { get; set; }
+
         [RedisDefault("")]
         public string ShipFrom { get; set; }
 
