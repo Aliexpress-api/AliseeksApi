@@ -40,6 +40,12 @@ namespace AliseeksApi.Services.Aliexpress
             if (search.AppOnly.HasValue)
                 qs.Add("isMobileExclusive", search.AppOnly.Value.YesOrNo());
 
+            if (search.QuantityMax.HasValue)
+                qs.Add("maxQuantity", search.QuantityMax.Value.ToString());
+
+            if (search.QuantityMin.HasValue)
+                qs.Add("minQuantity", search.QuantityMin.Value.ToString());
+
             qs.Add("page", (model.Page).ToString());
 
             var strings = new List<string>();
