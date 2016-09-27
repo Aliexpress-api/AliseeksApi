@@ -199,5 +199,20 @@ namespace AliseeksApi.Services.User
             return response;
         }
 
+        public async Task<UserOverviewModel> Overview(string username)
+        {
+            var response = new UserOverviewModel();
+
+            try
+            {
+                response = await db.GetUserOverview(username);
+            }
+            catch (Exception e)
+            {
+                await raven.CaptureNetCoreEventAsync(e);
+            }
+
+            return response;
+        }
     }
 }

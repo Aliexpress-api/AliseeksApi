@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Security.Claims;
 using AliseeksApi.Services.Search;
+using Microsoft.AspNetCore.Authorization;
 
 using AliseeksApi.Storage.Postgres.Users;
 
@@ -62,6 +63,24 @@ namespace AliseeksApi.Controllers
                 };
 
             this.search.CacheItems(search);
+            return Ok();
+        }
+
+        [HttpPost]
+        [Route("/api/[controller]/save")]
+        [Authorize]
+        public IActionResult SaveSearch([FromBody]SearchCriteria criteria)
+        {
+            var model = new SavedSearchModel()
+            {
+                Criteria = criteria
+            };
+
+            if (HttpContext.User.Identity.IsAuthenticated)
+                model.Username = HttpContext.User.FindFirst(ClaimTypes.Name).Value;
+
+            this.search.SaveSearch(model);
+
             return Ok();
         }
     }

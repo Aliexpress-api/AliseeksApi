@@ -81,6 +81,12 @@ namespace AliseeksApi.Services.Search
             return result;
         }
 
+        public async Task<SavedSearchModel> SaveSearch(SavedSearchModel model)
+        {
+            await db.AddSavedSearchAsync(model);
+            return model;
+        }
+
         void storeSearchHistory(SearchCriteria search)
         {
             var model = new SearchHistoryModel()

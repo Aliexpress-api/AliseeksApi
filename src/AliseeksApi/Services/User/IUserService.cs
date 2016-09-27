@@ -14,5 +14,6 @@ namespace AliseeksApi.Services.User
         Task<BaseServiceResponse> Logout(UserLogoutModel model);
         Task<BaseServiceResponse> ResetPassword(UserResetPasswordModel model);
         Task<BaseServiceResponse> ResetValid(UserResetValidModel model);
+        Task<UserOverviewModel> Overview(string username);
     }
 }

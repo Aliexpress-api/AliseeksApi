@@ -18,6 +18,8 @@ namespace AliseeksApi.Storage.Postgres.Search
         const string searchCacheInsertColumns = @"searchid, itemid, currency, link, title, price, quantity, shippingprice, unit, lotprice, freeshipping, imageurl, mobileonly, storename, toprateseller, feedback, orders, source";
         const string searchCacheTable = "searchcache";
         const string searchCacheSelectColumns = @"itemid, currency, link, title, price, quantity, shippingprice, unit, lotprice, freeshipping, imageurl, mobileonly, storename, toprateseller, feedback, orders, source";
+        const string searchSaveInsertColumns = @"username, criteria";
+        const string searchSaveTable = "savesearch";
 
         IPostgresDb db;
 
@@ -67,6 +69,21 @@ namespace AliseeksApi.Storage.Postgres.Search
 
                     command.ExecuteNonQuery();
                 }
+            });
+        }
+
+        public async Task AddSavedSearchAsync(SavedSearchModel search)
+        {
+            await db.TransactionAsync(transaction =>
+            {
+                var cmdParameters = "@username, @criteria";
+                var cmd = new NpgsqlCommand();
+                cmd.Transaction = transaction;
+                cmd.Connection = transaction.Connection;
+                cmd.CommandText = $@"INSERT INTO {searchSaveTable} ({searchSaveInsertColumns}) VALUES ({cmdParameters});";
+                cmd.Parameters.AddWithValue("@username", search.Username);
+                cmd.Parameters.AddWithValue("@criteria", NpgsqlTypes.NpgsqlDbType.Jsonb, (search.Criteria == null) ? "" : JsonConvert.SerializeObject(search.Criteria));
+                cmd.ExecuteNonQuery();
             });
         }
     }

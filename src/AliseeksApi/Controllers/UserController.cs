@@ -7,6 +7,7 @@ using AliseeksApi.Models.User;
 using AliseeksApi.Services.User;
 using SharpRaven.Core;
 using SharpRaven.Core.Data;
+using Microsoft.AspNetCore.Authorization;
 
 // For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -68,6 +69,16 @@ namespace AliseeksApi.Controllers
             model.Token = model.Token.Replace(' ', '+');
             await user.ResetValid(model);
             return Ok();
+        }
+
+        [HttpGet]
+        [Route("/api/[controller]/{username}")]
+        [Authorize]
+        public async Task<IActionResult> Overview([FromRoute] string username)
+        {
+            var response = await user.Overview(username);
+
+            return Json(response);
         }
     }
 }

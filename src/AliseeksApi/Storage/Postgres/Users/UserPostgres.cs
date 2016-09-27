@@ -6,6 +6,7 @@ using AliseeksApi.Models.User;
 using Npgsql;
 using Newtonsoft.Json;
 using AliseeksApi.Exceptions.Postgres;
+using AliseeksApi.Models.Search;
 
 namespace AliseeksApi.Storage.Postgres.Users
 {
@@ -15,9 +16,13 @@ namespace AliseeksApi.Storage.Postgres.Users
 
         const string userInsertColumns = "username, password, salt, email, meta";
         const string userSelectColumns = "id, username, password, salt, created_date, email, meta";
+        const string userSecureSelectColumns = "username, created_date, email, meta";
         const string userExistColumns = "username, email";
         const string userUpdateColumns = "password, salt, email, reset, meta";
         const string userTable = "users";
+        
+        const string savedSearchSelectColumns = "created, criteria";
+        const string savedSearchTable = "savesearch";
 
         public UsersPostgres(IPostgresDb db)
         {
@@ -166,6 +171,39 @@ namespace AliseeksApi.Storage.Postgres.Users
             });
 
             return user;
+        }
+
+        public async Task<UserOverviewModel> GetUserOverview(string username)
+        {
+            UserOverviewModel overview = new UserOverviewModel();
+            var command = new NpgsqlCommand();
+            command.CommandText = $"SELECT {userSecureSelectColumns},{savedSearchSelectColumns} FROM {userTable} JOIN {savedSearchTable} on {userTable}.username = {savedSearchTable}.username WHERE username=@username;";
+            command.Parameters.AddWithValue("username", username);
+
+            var savedSearches = new List<SavedSearchModel>();
+
+            await db.TransactionAsync(transaction =>
+            {
+                command.Transaction = transaction;
+                var reader = command.ExecuteReader();
+
+                while(reader.Read())
+                {
+                    int ordinal = 0;
+                    var savedSearch = new SavedSearchModel();
+                    savedSearch.Created = reader.GetDateTime(ordinal++);
+                    savedSearch.Criteria = JsonConvert.DeserializeObject<SearchCriteria>(reader.GetString(ordinal++));
+
+                    savedSearches.Add(savedSearch);
+                }
+
+                transaction.Commit();                
+            });
+
+            overview.Username = username;
+            overview.SavedSearches = savedSearches.ToArray();
+
+            return overview;
         }
     }
 }
