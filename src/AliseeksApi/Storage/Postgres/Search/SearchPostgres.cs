@@ -86,5 +86,13 @@ namespace AliseeksApi.Storage.Postgres.Search
                 cmd.ExecuteNonQuery();
             });
         }
+
+        public async Task DeleteSavedSearchAsync(SavedSearchModel search)
+        {
+            var command = new NpgsqlCommand();
+            command.CommandText = $"DELETE FROM {searchSaveTable} WHERE id=@id";
+            command.Parameters.AddWithValue("@id", search.ID);
+            await db.CommandNonqueryAsync(command);
+        }
     }
 }

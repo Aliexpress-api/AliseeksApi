@@ -12,5 +12,6 @@ namespace AliseeksApi.Storage.Postgres.Search
         Task AddSearchAsync(SearchHistoryModel history);
         Task AddItemsAsync(IEnumerable<ItemModel> items);
         Task AddSavedSearchAsync(SavedSearchModel search);
+        Task DeleteSavedSearchAsync(SavedSearchModel search);
     }
 }

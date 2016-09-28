@@ -83,5 +83,23 @@ namespace AliseeksApi.Controllers
 
             return Ok();
         }
+
+        [HttpDelete]
+        [Route("/api/[controller]/save/{id}")]
+        [Authorize]
+        public IActionResult DeleteSearch(int id)
+        {
+            var model = new SavedSearchModel()
+            {
+                ID = id
+            };
+
+            if (HttpContext.User.Identity.IsAuthenticated)
+                model.Username = HttpContext.User.FindFirst(ClaimTypes.Name).Value;
+
+            this.search.DeleteSearch(model);
+
+            return Ok();
+        }
     }
 }
