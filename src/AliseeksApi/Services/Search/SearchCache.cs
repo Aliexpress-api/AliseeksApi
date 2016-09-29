@@ -91,10 +91,11 @@ namespace AliseeksApi.Services.Search
             results.Items.AddRange(uncertain);
 
             //Cache the pages asked
-            for (int from = model.PageFrom; from <= (model.PageFrom - 1) + results.Items.Count / SearchFormatter.ResultsPerPage; from++)
+            int index = 1;
+            foreach(int page in pages)
             {
-                criteria.Page = from;
-                await cacheItemSearch(criteria, SearchFormatter.FormatResults(from - model.PageFrom, results).Results);
+                criteria.Page = page;
+                await cacheItemSearch(criteria, SearchFormatter.FormatResults(index++, results).Results);
             }
 
             var leftOver = results.Items.Skip((results.Items.Count / SearchFormatter.ResultsPerPage) * SearchFormatter.ResultsPerPage);
