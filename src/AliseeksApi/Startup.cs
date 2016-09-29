@@ -100,6 +100,8 @@ namespace AliseeksApi
             });
 
             app.UseMvc();
+
+            Jobs.JobScheduler.ScheduleJobs();
         }
 
         void configureDependencyInjection(IServiceCollection services)
@@ -157,6 +159,9 @@ namespace AliseeksApi
 
             //Add Utilities
             services.AddTransient<ISecurityHasher, SecurityHasher>();
+
+            //Add Jobs
+            services.AddTransient<Jobs.PriceHistoryJob>();
         }
     }
 }

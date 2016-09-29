@@ -11,5 +11,6 @@ namespace AliseeksApi.Services.Search
         Task<SearchResultOverview> SearchItems(SearchCriteria search);
         void CacheItems(SearchCriteria search);
         Task<SavedSearchModel> SaveSearch(SavedSearchModel model);
+        Task<ItemPriceHistoryModel[]> GetPriceHistories(PriceHistoryRequestModel[] models);
     }
 }

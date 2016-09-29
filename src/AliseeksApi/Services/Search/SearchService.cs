@@ -87,6 +87,16 @@ namespace AliseeksApi.Services.Search
             return model;
         }
 
+        public async Task<ItemPriceHistoryModel[]> GetPriceHistories(PriceHistoryRequestModel[] models)
+        {
+            return await db.SelectItemPriceHistoriesAsync(models);
+        }
+
+        public async Task<ItemModel> ItemSearch(ItemModel model)
+        {
+
+        }
+
         void storeSearchHistory(SearchCriteria search)
         {
             var model = new SearchHistoryModel()

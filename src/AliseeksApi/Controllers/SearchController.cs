@@ -83,5 +83,14 @@ namespace AliseeksApi.Controllers
 
             return Ok();
         }
+
+        [HttpPost]
+        [Route("/api/[controller]/price")]
+        public async Task<IActionResult> GetPriceHistory([FromBody]PriceHistoryRequestModel[] models)
+        {
+            var response = await search.GetPriceHistories(models);
+
+            return Json(response);
+        }
     }
 }
