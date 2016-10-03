@@ -9,8 +9,12 @@ namespace AliseeksApi.Jobs
 {
     public static class JobScheduler
     {
+        public static bool RunJobs = false;
+
         public static void ScheduleJobs()
         {
+            if(!RunJobs) { return; }
+
             RecurringJob.AddOrUpdate<PriceHistoryJob>("pricehistory", x => x.RunJob(), Cron.MinuteInterval(5));
             RecurringJob.Trigger("pricehistory");
         }

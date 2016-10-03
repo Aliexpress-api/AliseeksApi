@@ -16,5 +16,20 @@ namespace AliseeksApi.Utility.Extensions
         {
             return value ? "1" : "0";
         }
+
+        public static string ExtractNumerical(this string value)
+        {
+            string ret = "";
+
+            for(int i = 0; i != value.Length; i++)
+            {
+                if(char.IsNumber(value[i]))
+                {
+                    ret += value[i];
+                }
+            }
+
+            return ret;
+        }
     }
 }

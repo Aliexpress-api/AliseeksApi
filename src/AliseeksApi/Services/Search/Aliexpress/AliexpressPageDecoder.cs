@@ -4,9 +4,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AliseeksApi.Models;
+using AliseeksApi.Models.Search.Aliexpress;
 using HtmlAgilityPack;
 using AliseeksApi.Utility.Extensions;
 using AliseeksApi.Models.Search;
+using Newtonsoft.Json;
 
 namespace AliseeksApi.Utility
 {
@@ -27,9 +29,30 @@ namespace AliseeksApi.Utility
 		//Matches all decimal numbers with OPTIONAL decimal point
 		const string shippingPriceStringRegex = @"\d+\.?\d*";
 
-        public ItemModel ScrapeSingleItem(string html)
-        {
+        //Matches all numbers in string
+        const string quantityStringRegex = @"([0-9])\w+";
 
+        //Matches all numbers in string
+        const string stockStringRegex = @"([0-9])\w+";
+
+        public ItemDetail ScrapeSingleItem(string html)
+        {
+            try
+            {
+                var doc = new HtmlDocument();
+                doc.LoadHtml(html);
+
+                var itemNode = doc.DocumentNode.GetNodesByCssClass("detail");
+
+                var item = scrapeSingleItem(itemNode);
+
+                return item;
+            }
+            catch(Exception e)
+            {
+                //Log this as a warning
+                return new ItemDetail();
+            }
         }
 
 		public SearchResultOverview ScrapeSearchResults(string html)
@@ -60,6 +83,23 @@ namespace AliseeksApi.Utility
                 return new SearchResultOverview();
 			}
 		}
+
+        public FreightAjax[] ScrapeFreightResults(string html)
+        {
+            try
+            {
+                var jsonText = html.Substring(12, html.Length - 2 - 12);
+                var freights = JsonConvert.DeserializeObject<FreightAjax[]>(jsonText);
+
+                return freights;
+            }
+            catch(Exception e)
+            {
+                //Log as exception
+            }
+
+            return new FreightAjax[0];
+        }
 
 		SearchResultOverview scrapeSearchResultsOverview(HtmlNode node)
 		{
@@ -310,22 +350,215 @@ namespace AliseeksApi.Utility
 			return item;
 		}
 
-        Item scrapeSingleItem(HtmlNode node)
+        ItemDetail scrapeSingleItem(HtmlNode node)
         {
-            Item item = new Item()
+            ItemDetail item = new ItemDetail()
             {
                 Source = "Aliexpress"
             };
 
+            //<h1 class="product-name" itemprop="name">10PCS LOT Cooler 40 x 40 x 10mm 4010s DC 2Pin 12V 40mm Computer Cooling Fan</h1>
             var nameElement = node.GetNodesByCssClass("product-name");
 
+            //<span class="order-num" id="j-order-num">227 orders</span>
             var ordersElement = node.GetNodesByCssClass("order-num");
 
+            //<span id="j-sku-price" class="p-price">8.79</span>
             var priceElement = node.GetNodesByCssClass("p-price");
 
+            //<span class="p-symbol">US $</span>
             var currencyElement = node.GetNodesByCssClass("p-symbol");
 
+            //<span class="p-unit"> lot </span>
             var unitElement = node.GetNodesByCssClass("p-unit");
+
+            //Must use calculate freight to get this info
+            /*    //<span class="logistics-cost" data-role="shipping-price">Free Shipping</span>
+                var shippingPriceElement = node.GetNodesByDataRole("shipping-price");
+
+                //<span id="j-shipping-company">ePacket</span>
+                var shippingCompanyElement = node.GetNodesByID("j-shipping-company"); */
+
+            //<div class="description-content" data-role="description">
+            var descriptionElement = node.GetNodesByCssClass("product-property-list");
+
+            //<span class="packaging-des">lot (10 pieces/lot)</span>
+            var quantityElement = node.GetNodesByCssClass("packaging-des");
+
+            //<ul class="image-thumb-list" id="j-image-thumb-list">
+            var imageElement = node.GetNodesByCssClass("image-thumb-list");
+
+            //<em data-role="stock-num" id="j-sell-stock-num">5 lots</em>
+            var stockNumElement = node.GetJavascriptParam("window.runParams.totalAvailQuantity");
+
+            var itemIdElement = node.GetJavascriptParam("window.runParams.productId");
+
+            if (itemIdElement != null)
+            {
+                item.ItemID = itemIdElement.ExtractNumerical();
+            }
+
+            if(nameElement != null)
+            {
+                item.Name = nameElement.InnerText;
+            }
+
+            if(ordersElement != null)
+            {
+                string orderNum = ordersElement.InnerText.ExtractNumerical();
+                int orderTemp = 0;
+                if(int.TryParse(orderNum, out orderTemp))
+                {
+                    item.Orders = orderTemp;
+                }
+                else
+                {
+                    //Log as warning
+                }
+            }
+
+            if(priceElement != null)
+            {
+                var priceString = priceElement.InnerText;
+                var priceRegex = Regex.Matches(priceString, priceStringRegex);
+                decimal priceTemp = 0;
+
+                if(priceRegex.Count > 0)
+                {
+                    if(decimal.TryParse(priceRegex[0].Value, out priceTemp))
+                    {
+                        item.Price = priceTemp;
+                    }
+                    else
+                    {
+                        //Log as a warning
+                    }
+                }
+            }
+
+            if (currencyElement != null)
+            {
+                item.Currency = currencyElement.InnerText;
+            }
+
+            if(unitElement != null)
+            {
+                item.Unit = unitElement.InnerText.Trim();
+            }
+
+/*            if(shippingPriceElement != null)
+            {
+                var shippingPriceText = shippingPriceElement.InnerText;
+                if (shippingPriceText == "Free Shipping")
+                    item.ShippingPrice = 0;
+                else
+                {
+                    var shippingRegex = Regex.Match(shippingPriceText, shippingPriceStringRegex);
+                    if(shippingRegex.Success)
+                    {
+                        decimal shippingTemp = 0;
+                        if(decimal.TryParse(shippingRegex.Value, out shippingTemp))
+                        {
+                            item.ShippingPrice = shippingTemp;
+                        }
+                        else
+                        {
+                            //Log as warning
+                            item.ShippingPrice = 0;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                item.ShippingPrice = 0;
+            }
+
+            if(shippingCompanyElement != null)
+            {
+                item.ShippingType = shippingCompanyElement.InnerText.Trim();
+            }
+
+            if(descriptionElement != null)
+            {
+                var properties = descriptionElement.Descendants().Where(p => p.Attributes.Contains("class") && p.Attributes["class"].Value.Contains("property-item"));
+
+                foreach(var prop in properties)
+                {
+                    item.Description += $"{prop.InnerText}<br/>";
+                }
+            } */
+
+            if(quantityElement != null)
+            {
+                var quantityString = quantityElement.InnerText;
+                int quantityTemp = 0;
+                var quantityRegex = Regex.Matches(quantityString, quantityStringRegex);
+
+                if(quantityRegex.Count > 0)
+                {
+                    if(!int.TryParse(quantityRegex[0].Value, out quantityTemp))
+                    {
+                        item.Quantity = quantityTemp;
+                    }
+                    else
+                    {
+                        item.Quantity = 1;
+                        //Log as warning
+                    }
+                }
+                else
+                {
+                    item.Quantity = 1;
+                }
+            }
+
+            if(imageElement != null)
+            {
+                var images = imageElement.Descendants().Where(p => p.Attributes.Contains("class") && p.Attributes["class"].Value.Contains("img-thumb-item"));
+                var imageLinks = new List<string>();
+
+                foreach(var image in images)
+                {
+                    var imgElement = image.Descendants().First(p => p.Name == "img");
+                    var imageLink = imgElement.Attributes["src"].Value;
+                    imageLink = imageLink.Replace("50x50", "640x640");
+
+                    imageLinks.Add(imageLink);
+                }
+
+                item.ImageUrls = imageLinks.ToArray();
+            }
+
+            if(stockNumElement != null)
+            {
+                var stockString = stockNumElement;
+                int stockTemp = 0;
+                var stockRegex = Regex.Matches(stockString, stockStringRegex);
+
+                if(stockRegex.Count > 0)
+                {
+                    if(int.TryParse(stockRegex[0].Value, out stockTemp))
+                    {
+                        item.Stock = stockTemp;
+                    }
+                    else
+                    {
+                        //Log as a warning
+                        item.Stock = 1;
+                    }
+                }
+                else
+                {
+                    item.Stock = 1;
+                }
+            }
+            else
+            {
+                item.Stock = 1;
+            }
+
+            return item;
         }
-	}
+    }
 }

@@ -15,6 +15,7 @@ using SharpRaven.Core.Data;
 using SharpRaven.Core;
 using AliseeksApi.Services.Search;
 using AliseeksApi.Services.Aliexpress;
+using AliseeksApi.Models.Search.Aliexpress;
 using Hangfire;
 
 namespace AliseeksApi.Services
@@ -40,6 +41,58 @@ namespace AliseeksApi.Services
             var items = await searchItems(this.ServiceModel);
 
             return items;
+        }
+
+        public override async Task<ItemDetail> SearchItem(ItemDetail item)
+        {
+            string endpoint = SearchEndpoints.AliexpressItemUrl(item.Name, item.ItemID);
+
+            var response = await http.Get(endpoint);
+
+            try
+            {
+                item = new AliexpressPageDecoder().ScrapeSingleItem(response);
+
+                var freights = await CalculateFreight(new FreightAjaxRequest()
+                {
+                    ProductID = item.ItemID,
+                    Country = "US",
+                    CurrencyCode = "USD"
+                });
+
+                if(freights.Length > 0)
+                {
+                    var def = freights.FirstOrDefault(x => x.IsDefault == true);
+                    item.ShippingPrice = def.LocalPrice;
+                    item.ShippingType = def.CompanyDisplayName;
+                }
+            }
+            catch(Exception e)
+            {
+                await raven.CaptureNetCoreEventAsync(e);
+            }
+
+            return item;
+        }
+
+        public async Task<FreightAjax[]> CalculateFreight(FreightAjaxRequest model)
+        {
+            string endpoint = SearchEndpoints.AliexpressFreight(model.ProductID, model.CurrencyCode, model.Country);
+
+            var response = await http.Get(endpoint);
+
+            try
+            {
+                var freights = new AliexpressPageDecoder().ScrapeFreightResults(response);
+
+                return freights;
+            }
+            catch(Exception e)
+            {
+                await raven.CaptureNetCoreEventAsync(e);
+            }
+
+            return null;
         }
 
         //Function that actually goes out and gets Aliexpress search and converts it

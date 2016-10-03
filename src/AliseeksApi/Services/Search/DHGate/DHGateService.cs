@@ -10,6 +10,7 @@ using SharpRaven.Core;
 using SharpRaven.Core.Data;
 using AliseeksApi.Utility.Extensions;
 using AliseeksApi.Services.Search;
+using AliseeksApi.Models;
 
 namespace AliseeksApi.Services.DHGate
 {
@@ -97,6 +98,11 @@ namespace AliseeksApi.Services.DHGate
             }
 
             return (overallResult != null) ? overallResult : new SearchResultOverview();
+        }
+
+        public override async Task<ItemDetail> SearchItem(ItemDetail item)
+        {
+            return item;
         }
     }
 }
