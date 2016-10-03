@@ -27,14 +27,19 @@ namespace AliseeksApi.Utility
 		//Matches all decimal numbers with OPTIONAL decimal point
 		const string shippingPriceStringRegex = @"\d+\.?\d*";
 
-		public SearchResultOverview DecodePage(string html)
+        public ItemModel ScrapeSingleItem(string html)
+        {
+
+        }
+
+		public SearchResultOverview ScrapeSearchResults(string html)
 		{
 			try
 			{
 				var doc = new HtmlDocument();
 				doc.LoadHtml(html);
 
-                var searchResultOverview = extractResultsOverview(doc.DocumentNode);
+                var searchResultOverview = scrapeSearchResultsOverview(doc.DocumentNode);
 
 				//select element holding items
 				var itemElements = doc.DocumentNode.Descendants().First(p => p.Id.Contains("page")).Descendants().Where(p => p.Attributes.Contains("class") && p.Attributes["class"].Value == "item");
@@ -42,7 +47,7 @@ namespace AliseeksApi.Utility
 				//Cycle through all the elements
 				foreach (var element in itemElements)
 				{
-					var item = decodeItemnode(element);
+					var item = scrapeSearchResultsItemNode(element);
 
                     searchResultOverview.Items.Add(item);
 				}
@@ -56,7 +61,7 @@ namespace AliseeksApi.Utility
 			}
 		}
 
-		SearchResultOverview extractResultsOverview(HtmlNode node)
+		SearchResultOverview scrapeSearchResultsOverview(HtmlNode node)
 		{
 			var searchResult = new SearchResultOverview();
 
@@ -83,7 +88,7 @@ namespace AliseeksApi.Utility
 		}
 
 		//Where the magic happens
-		Item decodeItemnode(HtmlNode node)
+		Item scrapeSearchResultsItemNode(HtmlNode node)
 		{
 			Item item = new Item()
 			{
@@ -304,5 +309,23 @@ namespace AliseeksApi.Utility
 
 			return item;
 		}
+
+        Item scrapeSingleItem(HtmlNode node)
+        {
+            Item item = new Item()
+            {
+                Source = "Aliexpress"
+            };
+
+            var nameElement = node.GetNodesByCssClass("product-name");
+
+            var ordersElement = node.GetNodesByCssClass("order-num");
+
+            var priceElement = node.GetNodesByCssClass("p-price");
+
+            var currencyElement = node.GetNodesByCssClass("p-symbol");
+
+            var unitElement = node.GetNodesByCssClass("p-unit");
+        }
 	}
 }

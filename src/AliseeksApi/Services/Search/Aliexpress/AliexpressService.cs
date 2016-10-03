@@ -84,7 +84,7 @@ namespace AliseeksApi.Services
             {
                 try
                 {
-                    var result = new AliexpressPageDecoder().DecodePage(response);
+                    var result = new AliexpressPageDecoder().ScrapeSearchResults(response);
 
                     if (results == null)
                     {
