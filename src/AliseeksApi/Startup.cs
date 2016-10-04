@@ -133,6 +133,7 @@ namespace AliseeksApi
             services.AddTransient<IFeedbackPostgres, FeedbackPostgres>();
             services.AddTransient<DropshipItemsPostgres>();
             services.AddTransient<OAuthPostgres>();
+            services.AddTransient<DropshipAccountsPostgres>();
 
             //Configure RavenClient
             services.AddScoped<IRavenClient, RavenClient>((s) => {

@@ -32,7 +32,12 @@ namespace AliseeksApi.Controllers
         [Route("/api/[controller]/add")]
         public async Task<IActionResult> Add([FromQuery]SingleItemRequest item)
         {
-            await dropship.DropshipProduct(item);
+            if (HttpContext.User.Identity.IsAuthenticated)
+                item.Username = HttpContext.User.Identity.Name;
+            else
+                item.Username = "Guest";
+
+            await dropship.AddProduct(item);
 
             return Ok();
         }

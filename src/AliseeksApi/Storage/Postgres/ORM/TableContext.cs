@@ -74,7 +74,7 @@ namespace AliseeksApi.Storage.Postgres.ORM
         public async Task Save(T model)
         {
             var command = new NpgsqlCommand();
-            command.CommandText = $"INSERT INTO {tableName} ({String.Join(",",InsertColumns(null))}) VALUES {String.Join(",",InsertValues(model))} ON CONFLICT DO UPDATE SET {String.Join(",",UpdateSet(model, command))};";
+            command.CommandText = $"INSERT INTO {tableName} ({String.Join(",",InsertColumns(null))}) VALUES ({String.Join(",",InsertValues(model))}) ON CONFLICT (id) DO UPDATE SET {String.Join(",",UpdateSet(model, command))};";
 
             await db.CommandNonqueryAsync(command);
         }
@@ -146,8 +146,7 @@ namespace AliseeksApi.Storage.Postgres.ORM
                 var attribute = prop.GetCustomAttribute<DataColumn>();
                 if (attribute != null && !attribute.Usages.Contains(DataColumnUsage.Create))
                 {
-                    var val = prop.GetValue(model);
-                    columns.Add(val == null ? null : val.ToString());
+                    columns.Add($"@{attribute.Name}");
                 }
             }
 

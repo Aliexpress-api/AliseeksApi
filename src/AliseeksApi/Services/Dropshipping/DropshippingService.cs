@@ -9,6 +9,9 @@ using AliseeksApi.Services.Dropshipping.Shopify;
 using AliseeksApi.Services.Search;
 using AliseeksApi.Models.Search;
 using AliseeksApi.Models;
+using AliseeksApi.Storage.Cache;
+using AliseeksApi.Utility;
+using Newtonsoft.Json;
 
 namespace AliseeksApi.Services.Dropshipping
 {
@@ -16,16 +19,56 @@ namespace AliseeksApi.Services.Dropshipping
     {
         private readonly ShopifyService shopify;
         private readonly ISearchService search;
-        private readonly DropshipItemsPostgres db;
+        private readonly DropshipItemsPostgres dbItems;
+        private readonly DropshipAccountsPostgres dbAccounts;
+        private readonly IApplicationCache cache;
 
-        public DropshippingService(ShopifyService shopify, ISearchService search, DropshipItemsPostgres db)
+        public DropshippingService(ShopifyService shopify, ISearchService search, DropshipItemsPostgres dbItems, DropshipAccountsPostgres dbAccounts, IApplicationCache cache)
         {
             this.shopify = shopify;
             this.search = search;
-            this.db = db;
+            this.dbItems = dbItems;
+            this.dbAccounts = dbAccounts;
         }
 
-        public async Task DropshipProduct(SingleItemRequest item)
+        public async Task<DropshipAccount> GetAccount(string username)
+        {
+            //Check cache for account info
+            var accountInfo = new DropshipAccount()
+            {
+                Username = username
+            };
+
+            if (await cache.Exists(RedisKeyConvert.Serialize(accountInfo)))
+                return JsonConvert.DeserializeObject<DropshipAccount>(await cache.GetString(RedisKeyConvert.Serialize(accountInfo)));
+
+            //Couldn't find it in the cache, look in db
+            accountInfo = await dbAccounts.GetOne(accountInfo);
+
+            if (accountInfo != null)
+                return accountInfo;
+
+            //Couldn't find it in db, must be a new account
+            accountInfo = new DropshipAccount()
+            {
+                Username = username,
+                Status = AccountStatus.New
+            };
+
+            return accountInfo;
+        }
+
+        public async Task<DropshipItem[]> GetProducts(string username)
+        {
+            var items = await dbItems.GetMultiple(new DropshipItemModel()
+            {
+                Username = username
+            });
+
+            return new DropshipItem[0];
+        }
+
+        public async Task AddProduct(SingleItemRequest item)
         {
             var detail = await search.ItemSearch(new ItemDetail()
             {
@@ -64,15 +107,16 @@ namespace AliseeksApi.Services.Dropshipping
 
             shopifyModel.Images = images.ToArray();
 
-            //var products = shopify.GetProducts();
             var product = await shopify.AddProduct(shopifyModel);
 
-            await db.Save(new DropshipItemModel()
+            await dbItems.Save(new DropshipItemModel()
             {
                 Listing = "Shopify",
                 ListingID = product.ID,
                 Source = detail.Source,
-                ItemID = detail.ItemID
+                ItemID = detail.ItemID,
+                Username = item.Username,
+                Rules = DropshipListingRules.Default
             });
         }
     }
