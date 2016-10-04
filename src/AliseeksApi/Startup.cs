@@ -1,7 +1,7 @@
-﻿using System;
+﻿#region Usings
+
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -9,7 +9,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using AliseeksApi.Services;
 using AliseeksApi.Services.Email;
-using AliseeksApi.Utility;
 using AliseeksApi.Middleware;
 using AliseeksApi.Storage.Redis;
 using StackExchange.Redis;
@@ -27,13 +26,18 @@ using AliseeksApi.Utility.Security;
 using AliseeksApi.Services.Logging;
 using AliseeksApi.Storage.Postgres.Logging;
 using AliseeksApi.Services.Search;
-using Microsoft.AspNetCore.Diagnostics;
+using AliseeksApi.Services.Dropshipping;
+using AliseeksApi.Services.Dropshipping.Shopify;
+using AliseeksApi.Storage.Postgres.Dropshipping;
+using AliseeksApi.Storage.Postgres.OAuth;
 using Microsoft.AspNetCore.Http;
 using SharpRaven.Core.Configuration;
 using SharpRaven.Core;
 using AliseeksApi.Services.DHGate;
 using Hangfire;
 using Hangfire.PostgreSql;
+
+#endregion
 
 namespace AliseeksApi
 {
@@ -68,6 +72,7 @@ namespace AliseeksApi
             services.Configure<RedisOptions>(Configuration.GetSection("RedisOptions"));
             services.Configure<PostgresOptions>(Configuration.GetSection("PostgresOptions"));
             services.Configure<RavenOptions>(Configuration.GetSection("RavenOptions"));
+            services.Configure<ShopifyOptions>(Configuration.GetSection("ShopifyOptions"));
 
             configureDependencyInjection(services);
 
@@ -126,6 +131,8 @@ namespace AliseeksApi
             services.AddTransient<ISearchPostgres, SearchPostgres>();
             services.AddTransient<ILoggingPostgres, LoggingPostgres>();
             services.AddTransient<IFeedbackPostgres, FeedbackPostgres>();
+            services.AddTransient<DropshipItemsPostgres>();
+            services.AddTransient<OAuthPostgres>();
 
             //Configure RavenClient
             services.AddScoped<IRavenClient, RavenClient>((s) => {
@@ -146,6 +153,8 @@ namespace AliseeksApi
             services.AddTransient<IJwtFactory, AliseeksJwtAuthentication>();
             services.AddTransient<IUserService, UserService>();
             services.AddTransient<ILoggingService, LoggingService>();
+            services.AddTransient<DropshippingService>();
+            services.AddTransient<ShopifyService>();
 
             services.AddTransient<WebSearchService[]>((provider) =>
             {

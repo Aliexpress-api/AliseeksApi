@@ -17,12 +17,12 @@ namespace AliseeksApi.Utility
 
         public static string AliexpressItemUrl(string itemTitle, string itemId)
         {
-            return $@"https://www.aliexpress.com/item/{itemTitle.Replace(" ", "-")}/{itemId}.html";
+            return $@"http://www.aliexpress.com/item/{itemTitle.Replace(" ", "-")}/{itemId}.html";
         }
 
         public static string AliexpressFreight(string productID, string currencyCode, string country)
         {
-            return $@"https://freight.aliexpress.com/ajaxFreightCalculateService.htm?productid={productID}&count=1&currencyCode={currencyCode}&country={country}";
+            return $@"http://freight.aliexpress.com/ajaxFreightCalculateService.htm?productid={productID}&count=1&currencyCode={currencyCode}&country={country}";
         }
     }
 }

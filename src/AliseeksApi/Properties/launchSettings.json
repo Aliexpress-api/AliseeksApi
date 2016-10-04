@@ -11,7 +11,7 @@
     "IIS Express": {
       "commandName": "IISExpress",
       "launchBrowser": true,
-      "launchUrl": "api/search/item?title=12V-2-Pin-40mm-Computer-Cooler-Small-Cooling-Fan-PC-Black-Heat-sink-Computer-radiator-computer&id=32692060602&source=Aliexpress",
+      "launchUrl": "api/dropshipping/add?title=12V-2-Pin-40mm-Computer-Cooler-Small-Cooling-Fan-PC-Black-Heat-sink-Computer-radiator-computer&id=32692060602&source=Aliexpress",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }

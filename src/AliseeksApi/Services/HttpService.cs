@@ -22,5 +22,63 @@ namespace AliseeksApi.Services
 
             return await content.ReadAsStringAsync();
         }
+
+        public async Task<HttpResponseMessage> Get(string endpoint, Action<HttpClient> configuration = null)
+        {
+            var response = new HttpResponseMessage();
+
+            HttpClientHandler handler = new HttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = (message, x502, chain, policy) =>
+            {
+                return true;
+            };
+
+            using (HttpClient client = new HttpClient(handler))
+            {
+                try
+                {
+                    configuration(client);
+
+                    var task = client.GetAsync(endpoint);
+
+                    task.Wait();
+
+                    response = task.Result;
+                }
+                catch(Exception e)
+                {
+
+                }
+            }
+
+            return response;
+        }
+
+        public async Task<HttpResponseMessage> Post(string endpoint, HttpContent content, Action<HttpClient> configuration = null)
+        {
+            var response = new HttpResponseMessage();
+
+            HttpClientHandler handler = new HttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = (message, x502, chain, policy) =>
+            {
+                return true;
+            };
+
+            using (HttpClient client = new HttpClient(handler))
+            {
+                try
+                {
+                    configuration(client);
+
+                    response = await client.PostAsync(endpoint, content);
+                }
+                catch (Exception e)
+                {
+
+                }
+            }
+
+            return response;
+        }
     }
 }

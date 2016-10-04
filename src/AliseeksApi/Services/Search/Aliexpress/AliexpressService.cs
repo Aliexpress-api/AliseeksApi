@@ -47,7 +47,16 @@ namespace AliseeksApi.Services
         {
             string endpoint = SearchEndpoints.AliexpressItemUrl(item.Name, item.ItemID);
 
-            var response = await http.Get(endpoint);
+            var response = "";
+
+            try
+            {
+                response = await http.Get(endpoint);
+            }
+            catch(Exception e)
+            {
+
+            }
 
             try
             {
