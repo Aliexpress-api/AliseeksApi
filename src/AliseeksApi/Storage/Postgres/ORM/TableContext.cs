@@ -13,7 +13,7 @@ namespace AliseeksApi.Storage.Postgres.ORM
 {
     public class TableContext<T> : ITableContext<T>
     {
-        private string tableName
+        protected string tableName
         {
             get
             {
@@ -26,7 +26,7 @@ namespace AliseeksApi.Storage.Postgres.ORM
                 return String.Empty;
             }
         }
-        private readonly IPostgresDb db;
+        protected readonly IPostgresDb db;
 
         public TableContext(IPostgresDb db)
         {
@@ -97,7 +97,16 @@ namespace AliseeksApi.Storage.Postgres.ORM
                 if(attribute != null)
                 {
                     var index = reader.GetOrdinal(attribute.Name);
-                    prop.SetValue(model, reader.GetValue(index));
+                    switch(attribute.DbType)
+                    {
+                        case NpgsqlTypes.NpgsqlDbType.Jsonb:
+                            prop.SetValue(model, JsonConvert.DeserializeObject((string)reader.GetValue(index), prop.PropertyType));
+                            break;
+
+                        default:
+                            prop.SetValue(model, reader.GetValue(index));
+                            break;
+                    }
                 }
             }
         }
@@ -192,7 +201,7 @@ namespace AliseeksApi.Storage.Postgres.ORM
                     switch (attribute.DbType)
                     {
                         case NpgsqlTypes.NpgsqlDbType.Jsonb:
-                            command.Parameters.AddWithValue($"@{attribute.Name}", JsonConvert.SerializeObject(model));
+                            command.Parameters.AddWithValue($"@{attribute.Name}", NpgsqlTypes.NpgsqlDbType.Jsonb, JsonConvert.SerializeObject(prop.GetValue(model)));
                             break;
 
                         default:
@@ -214,15 +223,17 @@ namespace AliseeksApi.Storage.Postgres.ORM
                 var attribute = prop.GetCustomAttribute<DataColumn>();
                 if(attribute != null && attribute.Usages.Contains(usage))
                 {
+                    var val = prop.GetValue(Model);
+
                     criteria.Add($"{attribute.Name}=@{attribute.Name}");
                     switch(attribute.DbType)
                     {
                         case NpgsqlTypes.NpgsqlDbType.Jsonb:
-                            command.Parameters.AddWithValue($"@{attribute.Name}", JsonConvert.SerializeObject(Model));
+                            command.Parameters.AddWithValue($"@{attribute.Name}", JsonConvert.SerializeObject(val));
                             break;
 
                         default:
-                            command.Parameters.AddWithValue($"@{attribute.Name}", prop.GetValue(Model));
+                            command.Parameters.AddWithValue($"@{attribute.Name}", val);
                             break;
                     }
                 }

@@ -39,11 +39,7 @@ namespace AliseeksApi.Services
                 {
                     configuration(client);
 
-                    var task = client.GetAsync(endpoint);
-
-                    task.Wait();
-
-                    response = task.Result;
+                    response = await client.GetAsync(endpoint);
                 }
                 catch(Exception e)
                 {

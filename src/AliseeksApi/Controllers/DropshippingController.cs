@@ -6,11 +6,14 @@ using Microsoft.AspNetCore.Mvc;
 using SharpRaven.Core;
 using AliseeksApi.Services.Dropshipping;
 using AliseeksApi.Models.Search;
+using Microsoft.AspNetCore.Authorization;
+using AliseeksApi.Models.Dropshipping;
 
 // For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace AliseeksApi.Controllers
 {
+    //[Authorize]
     public class DropshippingController : Controller
     {
         private readonly DropshippingService dropship;
@@ -28,9 +31,9 @@ namespace AliseeksApi.Controllers
             return View();
         }
 
-        [HttpGet]
+        [HttpPost]
         [Route("/api/[controller]/add")]
-        public async Task<IActionResult> Add([FromQuery]SingleItemRequest item)
+        public async Task<IActionResult> Add([FromBody]SingleItemRequest item)
         {
             if (HttpContext.User.Identity.IsAuthenticated)
                 item.Username = HttpContext.User.Identity.Name;
@@ -40,6 +43,48 @@ namespace AliseeksApi.Controllers
             await dropship.AddProduct(item);
 
             return Ok();
+        }
+
+        [HttpPut]
+        [Route("/api/[controller]/update")]
+        public async Task<IActionResult> Update([FromBody]DropshipItemModel model)
+        {
+            if (HttpContext.User.Identity.IsAuthenticated)
+                model.Username = HttpContext.User.Identity.Name;
+            else
+                model.Username = "Guest";
+
+            await dropship.Update(model);
+
+            return Ok();
+        }
+
+        [HttpGet]
+        [Route("/api/[controller]")]
+        public async Task<IActionResult> Get()
+        {
+            var username = "Guest";
+
+            if (HttpContext.User.Identity.IsAuthenticated)
+                username = HttpContext.User.Identity.Name;
+
+            var items = await dropship.GetProducts(username);
+
+            return Json(items);
+        }
+
+        [HttpGet]
+        [Route("/api/[controller]/account")]
+        public async Task<IActionResult> GetAccount()
+        {
+            var username = "Guest";
+
+            if (HttpContext.User.Identity.IsAuthenticated)
+                username = HttpContext.User.Identity.Name;
+
+            var account = await dropship.GetAccount(username);
+
+            return Json(account);
         }
     }
 }

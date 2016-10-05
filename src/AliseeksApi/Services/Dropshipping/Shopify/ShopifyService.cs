@@ -74,11 +74,37 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
                 addAuthenticatoin(client);
             });
 
-            ShopifyProductModel[] products = null;
+            string message = await response.Content.ReadAsStringAsync();
 
-            products = JsonConvert.DeserializeObject<ShopifyProductModel[]>(await response.Content.ReadAsStringAsync());
+            if (response.IsSuccessStatusCode)
+            {
+                var productResponse = JObject.Parse(message).SelectToken("product").ToString();
+                var ret = JsonConvert.DeserializeObject<ShopifyProductModel[]>(productResponse, jsonSettings);
+                return ret;
+            }
 
-            return products;       
+            return new ShopifyProductModel[0];       
+        }
+
+        public async Task<ShopifyProductModel[]> GetProductsByID(string[] ids)
+        {
+            string endpoint = ShopifyEndpoints.BaseEndpoint(config.APIKey, config.Password, "Aliseeks.MyShopify", ShopifyEndpoints.Products) + $"?ids={String.Join(",", ids)}";
+
+            var response = await http.Get(endpoint, (client) =>
+            {
+                addAuthenticatoin(client);
+            });
+
+            string message = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                var productResponse = JObject.Parse(message).SelectToken("products").ToString();
+                var ret = JsonConvert.DeserializeObject<ShopifyProductModel[]>(productResponse, jsonSettings);
+                return ret;
+            }
+
+            return new ShopifyProductModel[0];
         }
 
         void addAuthenticatoin(HttpClient client)

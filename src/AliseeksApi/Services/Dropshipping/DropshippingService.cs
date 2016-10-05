@@ -29,6 +29,7 @@ namespace AliseeksApi.Services.Dropshipping
             this.search = search;
             this.dbItems = dbItems;
             this.dbAccounts = dbAccounts;
+            this.cache = cache;
         }
 
         public async Task<DropshipAccount> GetAccount(string username)
@@ -43,7 +44,7 @@ namespace AliseeksApi.Services.Dropshipping
                 return JsonConvert.DeserializeObject<DropshipAccount>(await cache.GetString(RedisKeyConvert.Serialize(accountInfo)));
 
             //Couldn't find it in the cache, look in db
-            accountInfo = await dbAccounts.GetOne(accountInfo);
+            accountInfo = await dbAccounts.GetOneByUsername(username);
 
             if (accountInfo != null)
                 return accountInfo;
@@ -60,12 +61,36 @@ namespace AliseeksApi.Services.Dropshipping
 
         public async Task<DropshipItem[]> GetProducts(string username)
         {
-            var items = await dbItems.GetMultiple(new DropshipItemModel()
-            {
-                Username = username
-            });
+            var dropshipItems = new List<DropshipItem>();
 
-            return new DropshipItem[0];
+            var items = await dbItems.GetMultipleByUsername(username);
+
+            var ids = new List<string>();
+            foreach(var item in items)
+            {
+                ids.Add(item.ListingID);
+            }
+
+            var shopifyItems = await shopify.GetProductsByID(ids.ToArray());
+
+            foreach(var shopifyItem in shopifyItems)
+            {
+                var item = items.First(x => x.ListingID == shopifyItem.ID);
+                dropshipItems.Add(new DropshipItem()
+                {
+                    Dropshipping = item,
+                    Product = shopifyItem
+                });
+            }
+
+            return dropshipItems.ToArray();
+        }
+
+        public async Task<DropshipItemModel> Update(DropshipItemModel model)
+        {
+            await dbItems.Save(model);
+
+            return model;
         }
 
         public async Task AddProduct(SingleItemRequest item)
