@@ -12,6 +12,9 @@ using AliseeksApi.Models;
 using AliseeksApi.Storage.Cache;
 using AliseeksApi.Utility;
 using Newtonsoft.Json;
+using AliseeksApi.Services.Aliexpress;
+using Microsoft.AspNetCore.Routing;
+using AliseeksApi.Exceptions;
 
 namespace AliseeksApi.Services.Dropshipping
 {
@@ -30,6 +33,20 @@ namespace AliseeksApi.Services.Dropshipping
             this.dbItems = dbItems;
             this.dbAccounts = dbAccounts;
             this.cache = cache;
+        }
+
+        public async Task<DropshipAccount> SetupAccount(DropshipAccountConfiguration account, string username)
+        {
+            var dropshipAccount = new DropshipAccount()
+            {
+                Username = username,
+                Status = AccountStatus.Existing,
+                Subscription = account.Subscription
+            };
+
+            await dbAccounts.Save(dropshipAccount);
+
+            return dropshipAccount;
         }
 
         public async Task<DropshipAccount> GetAccount(string username)
@@ -143,6 +160,26 @@ namespace AliseeksApi.Services.Dropshipping
                 Username = item.Username,
                 Rules = DropshipListingRules.Default
             });
+        }
+
+        public async Task AddProduct(DropshipItemModel model)
+        {
+            if (model.SourceLink == null || model.SourceLink == String.Empty)
+                return;
+
+            switch(model.Source)
+            {
+                case "Aliexpress":
+                    var routeValues = new AliexpressQueryString().DecodeItemLink(model.SourceLink);
+                    if (routeValues.ID == String.Empty)
+                        throw new AllowedException("Invalid Aliexpress Item Link");
+
+                    await AddProduct(routeValues);
+                    break;
+
+                default:
+                    throw new Exception("Invalid DropshipItemModel Source");
+            }
         }
     }
 }

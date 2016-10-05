@@ -7,11 +7,14 @@ using Microsoft.AspNetCore.Http;
 using AliseeksApi.Utility.Extensions;
 using Microsoft.AspNetCore.WebUtilities;
 using AliseeksApi.Utility;
+using Microsoft.AspNetCore.Routing;
 
 namespace AliseeksApi.Services.Aliexpress
 {
     public class AliexpressQueryString
     {
+        private const string aliexpressItemLinkTemplate = "item/{itemTitle}/{itemid}.html";
+
         public string Convert(SearchServiceModel model)
         {
             var qs = new Dictionary<string, string>();
@@ -55,6 +58,23 @@ namespace AliseeksApi.Services.Aliexpress
             }
 
             return SearchEndpoints.AliexpressSearchUrl + String.Join("&", strings);
+        }
+
+        public SingleItemRequest DecodeItemLink(string link)
+        {
+            var uri = new Uri(link);
+            var routeMatcher = new RouteMatcher();
+            var values = routeMatcher.Match(aliexpressItemLinkTemplate, uri.LocalPath);
+
+            var singleItem = new SingleItemRequest()
+            {
+                Source = "Aliexpress"
+            };
+            
+            singleItem.Title = values.ContainsKey("itemTitle") ? values["itemTitle"].ToString() : String.Empty;
+            singleItem.ID = values.ContainsKey("itemid") ? values["itemid"].ToString() : String.Empty;
+
+            return singleItem;
         }
     }
 }

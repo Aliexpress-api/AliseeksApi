@@ -8,6 +8,7 @@ using AliseeksApi.Services.Dropshipping;
 using AliseeksApi.Models.Search;
 using Microsoft.AspNetCore.Authorization;
 using AliseeksApi.Models.Dropshipping;
+using AliseeksApi.Services.Aliexpress;
 
 // For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
 
