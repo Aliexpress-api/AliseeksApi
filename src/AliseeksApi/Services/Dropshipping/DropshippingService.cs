@@ -181,5 +181,16 @@ namespace AliseeksApi.Services.Dropshipping
                     throw new Exception("Invalid DropshipItemModel Source");
             }
         }
+
+        public async Task SyncProduct(DropshipItem[] items)
+        {
+            foreach(var item in items)
+            {
+                var sourceItem = search.ItemSearch(new SingleItemRequest() {
+                    Link = item.Dropshipping.SourceLink
+                });
+
+            }
+        }
     }
 }

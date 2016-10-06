@@ -172,6 +172,7 @@ namespace AliseeksApi
 
             //Add Jobs
             services.AddTransient<Jobs.PriceHistoryJob>();
+            services.AddTransient<Jobs.DropshippingJobs>();
         }
     }
 }

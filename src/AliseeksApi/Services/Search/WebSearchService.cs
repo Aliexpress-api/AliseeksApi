@@ -26,7 +26,7 @@ namespace AliseeksApi.Services.Search
             return this.SearchItems();
         }
 
-        public abstract Task<ItemDetail> SearchItem(ItemDetail item);
+        public abstract Task<ItemDetail> SearchItem(SingleItemRequest item);
 
         public virtual void StoreSearchItems(IEnumerable<Item> items)
         {

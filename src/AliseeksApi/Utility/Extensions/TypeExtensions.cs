@@ -31,5 +31,10 @@ namespace AliseeksApi.Utility.Extensions
 
             return ret;
         }
+
+        public static bool EmptyOrNull(this string value)
+        {
+            return (value == null) || value == String.Empty;
+        }
     }
 }

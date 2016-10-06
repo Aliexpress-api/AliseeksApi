@@ -92,16 +92,18 @@ namespace AliseeksApi.Services.Search
             return await db.SelectItemPriceHistoriesAsync(models);
         }
 
-        public async Task<ItemDetail> ItemSearch(ItemDetail model)
+        public async Task<ItemDetail> ItemSearch(SingleItemRequest model)
         {
+            var detail = new ItemDetail();
+
             switch(model.Source)
             {
                 case "Aliexpress":
-                    model = await services.First(x => x.ServiceType == SearchServiceType.Aliexpress).SearchItem(model);
+                    detail = await services.First(x => x.ServiceType == SearchServiceType.Aliexpress).SearchItem(model);
                     break;
             }
 
-            return model;
+            return detail;
         }
 
         void storeSearchHistory(SearchCriteria search)

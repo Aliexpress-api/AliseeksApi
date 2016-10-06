@@ -27,7 +27,7 @@ namespace AliseeksApi.Models.Dropshipping
         public string Username { get; set; }
 
         [RedisIgnore]
-        public AccountStatus Status { get; set; }
+        public AccountStatus Status { get; set; } = AccountStatus.Existing;
 
         [DataColumn("subscription")]
         [RedisIgnore]
@@ -35,13 +35,7 @@ namespace AliseeksApi.Models.Dropshipping
 
         [DataColumn("account", DbType = NpgsqlTypes.NpgsqlDbType.Jsonb)]
         [RedisIgnore]
-        public DropshipAccountRules Account { get; set; }
-
-        public DropshipAccount()
-        {
-            Status = AccountStatus.Existing;
-            Account = new DropshipAccountRules();
-        }
+        public DropshipAccountRules Account { get; set; } = new DropshipAccountRules();
     }
 
     public class DropshipAccountRules
@@ -52,5 +46,11 @@ namespace AliseeksApi.Models.Dropshipping
         {
             Default = DropshipListingRules.Default;
         }
+    }
+
+    public class DropshipAccountItem
+    {
+        public DropshipAccount Account { get; set; } = new DropshipAccount();
+        public DropshipItemModel Item { get; set; } = new DropshipItemModel();
     }
 }

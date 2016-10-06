@@ -11,6 +11,7 @@ namespace AliseeksApi.Models.Search
         public string Title { get; set; }
         public string ID { get; set; }
         public string Source { get; set; }
+        public string Link { get; set; }
 
         [JsonIgnore]
         public string Username { get; set; }

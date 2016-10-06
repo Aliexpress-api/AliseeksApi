@@ -8,6 +8,8 @@ using System.Reflection;
 using Newtonsoft.Json;
 using System.Data;
 using System.Data.Common;
+using AliseeksApi.Utility.Extensions;
+using AliseeksApi.Utility;
 
 namespace AliseeksApi.Storage.Postgres.ORM
 {
@@ -17,13 +19,7 @@ namespace AliseeksApi.Storage.Postgres.ORM
         {
             get
             {
-                var attribute = typeof(T).GetTypeInfo().GetCustomAttribute<TableName>();
-                if(attribute != null)
-                {
-                    return attribute.Name;
-                }
-
-                return String.Empty;
+                return ORMQueryHelper.GetTableName<T>();
             }
         }
         protected readonly IPostgresDb db;
@@ -39,7 +35,7 @@ namespace AliseeksApi.Storage.Postgres.ORM
 
             T retrieved = default(T);
 
-            command.CommandText = $"SELECT {String.Join(",", SelectColumns(null))} FROM {tableName} WHERE {String.Join("AND", WhereCriteria(model, command, DataColumnUsage.Retrieve, null))}";
+            command.CommandText = $"SELECT {ORMQueryHelper.GetSelectColumns<T>()} FROM {tableName} WHERE {String.Join("AND", WhereCriteria(model, command, DataColumnUsage.Retrieve, null))}";
             await db.CommandReaderAsync(command, (reader) =>
             {
                 while(reader.Read())
@@ -57,15 +53,12 @@ namespace AliseeksApi.Storage.Postgres.ORM
 
             var retrieved = new List<T>();
 
-            command.CommandText = $"SELECT {String.Join(",", SelectColumns(null))} FROM {tableName} WHERE {String.Join("AND", WhereCriteria(model, command, DataColumnUsage.Retrieve, null))}";
+            command.CommandText = $"SELECT {ORMQueryHelper.GetSelectColumns<T>()} FROM {tableName} WHERE {String.Join("AND", WhereCriteria(model, command, DataColumnUsage.Retrieve, null))}";
             await db.CommandReaderAsync(command, (reader) =>
             {
-                while (reader.Read())
-                {
                     T row = default(T);
                     LoadModel(reader, row);
                     retrieved.Add(row);
-                }
             });
 
             return retrieved.ToArray();
@@ -89,44 +82,8 @@ namespace AliseeksApi.Storage.Postgres.ORM
 
         internal void LoadModel(DbDataReader reader, T model)
         {
-            var props = typeof(T).GetProperties();
-
-            foreach(var prop in props)
-            {
-                var attribute = prop.GetCustomAttribute<DataColumn>();
-                if(attribute != null)
-                {
-                    var index = reader.GetOrdinal(attribute.Name);
-                    switch(attribute.DbType)
-                    {
-                        case NpgsqlTypes.NpgsqlDbType.Jsonb:
-                            prop.SetValue(model, JsonConvert.DeserializeObject((string)reader.GetValue(index), prop.PropertyType));
-                            break;
-
-                        default:
-                            prop.SetValue(model, reader.GetValue(index));
-                            break;
-                    }
-                }
-            }
+            model = reader.ReadModel<T>(model);
         }
-
-        internal string[] SelectColumns(string schema = null)
-        {
-            var properties = typeof(T).GetProperties();
-            var columns = new List<string>();
-
-            foreach(var prop in properties)
-            {
-                var attribute = prop.GetCustomAttribute<DataColumn>();
-                if(attribute != null)
-                {
-                    columns.Add(attribute.Name);
-                }
-            }
-
-            return columns.ToArray();
-        } 
 
         internal string[] InsertColumns(string schema = null)
         {

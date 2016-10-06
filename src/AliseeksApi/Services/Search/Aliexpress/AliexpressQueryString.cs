@@ -73,6 +73,7 @@ namespace AliseeksApi.Services.Aliexpress
             
             singleItem.Title = values.ContainsKey("itemTitle") ? values["itemTitle"].ToString() : String.Empty;
             singleItem.ID = values.ContainsKey("itemid") ? values["itemid"].ToString() : String.Empty;
+            singleItem.Link = link;
 
             return singleItem;
         }
