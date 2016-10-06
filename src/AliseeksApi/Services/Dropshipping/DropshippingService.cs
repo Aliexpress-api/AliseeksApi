@@ -103,6 +103,31 @@ namespace AliseeksApi.Services.Dropshipping
             return dropshipItems.ToArray();
         }
 
+        public async Task<DropshipItem[]> GetProducts(DropshipItemModel[] items)
+        {
+            var dropshipItems = new List<DropshipItem>();
+
+            var ids = new List<string>();
+            foreach (var item in items)
+            {
+                ids.Add(item.ListingID);
+            }
+
+            var shopifyItems = await shopify.GetProductsByID(ids.ToArray());
+
+            foreach (var shopifyItem in shopifyItems)
+            {
+                var item = items.First(x => x.ListingID == shopifyItem.ID);
+                dropshipItems.Add(new DropshipItem()
+                {
+                    Dropshipping = item,
+                    Product = shopifyItem
+                });
+            }
+
+            return dropshipItems.ToArray();
+        }
+
         public async Task<DropshipItemModel> Update(DropshipItemModel model)
         {
             await dbItems.Save(model);

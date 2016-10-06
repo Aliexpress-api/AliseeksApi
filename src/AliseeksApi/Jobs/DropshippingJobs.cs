@@ -7,6 +7,7 @@ using AliseeksApi.Storage.Postgres.Dropshipping;
 using AliseeksApi.Models.Dropshipping;
 using SharpRaven.Core;
 using Hangfire;
+using AliseeksApi.Models.Shopify;
 
 namespace AliseeksApi.Jobs
 {
@@ -33,6 +34,15 @@ namespace AliseeksApi.Jobs
             if(skip > count) { return; }
 
             var items = await dbItems.GetMultipleWithAccount(itemsPerJob, skip);
+            var users = items.Select(x => x.Account.Username).Distinct();
+            var products = new List<DropshipItem>();
+
+            foreach(var user in users)
+            {
+                var userItems = items.Where(x => x.Account.Username == user).Select(x => x.Item).ToArray();
+                products.AddRange(await dropship.GetProducts(userItems));
+            }
+            
 
             foreach(var item in items)
             {
