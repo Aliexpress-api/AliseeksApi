@@ -38,7 +38,7 @@ namespace AliseeksApi.Jobs
             {
                 if(item.Account.Subscription != "Expired")
                 {
-
+                    await dropship.SyncProduct(item.Item);
                 }
             }
 

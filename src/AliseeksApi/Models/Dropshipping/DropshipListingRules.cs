@@ -14,7 +14,8 @@ namespace AliseeksApi.Models.Dropshipping
                 return new DropshipListingRules()
                 {
                     FixedPricePercentage = 10,
-                    FixedPriceAdjustment = 10
+                    FixedPriceAdjustment = 10,
+                    FixedStockAdjustment = -5
                 };
             }
         }
@@ -22,7 +23,7 @@ namespace AliseeksApi.Models.Dropshipping
         public decimal? FixedPrice { get; set; }
         public decimal? FixedPriceAdjustment { get; set; }
         public decimal? FixedPricePercentage { get; set; }
-        public decimal? FixedStock { get; set; }
-        public decimal? FixedStockAdjustment { get; set; }
+        public int? FixedStock { get; set; }
+        public int? FixedStockAdjustment { get; set; }
     }
 }

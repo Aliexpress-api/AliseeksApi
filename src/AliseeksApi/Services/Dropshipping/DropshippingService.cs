@@ -112,29 +112,34 @@ namespace AliseeksApi.Services.Dropshipping
 
         public async Task AddProduct(SingleItemRequest item)
         {
-            var detail = await search.ItemSearch(new ItemDetail()
-            {
-                Source = item.Source,
-                ItemID = item.ID,
-                Name = item.Title
-            });
+            var detail = await search.ItemSearch(item);
 
-            var shopifyModel = new ShopifyProductModel()
+            var dropshipItem = new DropshipItem()
             {
-                BodyHtml = detail.Description,
-                Title = detail.Name,
-                Vendor = "Me",
-                ProductType = detail.Source,
-
-                Variants = new List<object>()
+                Dropshipping = new DropshipItemModel()
                 {
-                    new ShopifyVariant().Price((detail.Price + detail.ShippingPrice) * (decimal)1.05)
-                    .InventoryQuantity(detail.Quantity - 100 > 0 ? detail.Quantity - 100 : 0)
-                    .InventoryPolicy(InventoryPolicy.Deny)
-                    .InventoryManagement(InventoryManagement.Shopify)
-                    .RequireShipping(true)
-                    .Taxable(false)
-                    .Build()
+                    Listing = "Shopify",
+                    Source = detail.Source,
+                    ItemID = detail.ItemID,
+                    Username = item.Username,
+                    Rules = DropshipListingRules.Default
+                },
+                Product = new ShopifyProductModel()
+                {
+                    BodyHtml = detail.Description,
+                    Title = detail.Name,
+                    Vendor = "Me", //TODO: GET RID
+                    ProductType = detail.Source,
+
+                    Variants = new List<object>()
+                    {
+                        new ShopifyVariant()
+                        .InventoryPolicy(InventoryPolicy.Deny)
+                        .InventoryManagement(InventoryManagement.Shopify)
+                        .RequireShipping(true)
+                        .Taxable(false)
+                        .Build()
+                    }
                 }
             };
 
@@ -147,19 +152,15 @@ namespace AliseeksApi.Services.Dropshipping
                 });
             }
 
-            shopifyModel.Images = images.ToArray();
+            dropshipItem.Product.Images = images.ToArray();
 
-            var product = await shopify.AddProduct(shopifyModel);
+            dropshipItem.Product = dropshipItem.Dropshipping.Rules.ApplyRules(detail, dropshipItem.Product);
 
-            await dbItems.Save(new DropshipItemModel()
-            {
-                Listing = "Shopify",
-                ListingID = product.ID,
-                Source = detail.Source,
-                ItemID = detail.ItemID,
-                Username = item.Username,
-                Rules = DropshipListingRules.Default
-            });
+            var product = await shopify.AddProduct(dropshipItem.Product);
+
+            dropshipItem.Dropshipping.ListingID = product.ID;
+
+            await dbItems.Save(dropshipItem.Dropshipping);
         }
 
         public async Task AddProduct(DropshipItemModel model)
@@ -182,15 +183,15 @@ namespace AliseeksApi.Services.Dropshipping
             }
         }
 
-        public async Task SyncProduct(DropshipItem[] items)
+        public async Task SyncProduct(DropshipItem item)
         {
-            foreach(var item in items)
-            {
-                var sourceItem = search.ItemSearch(new SingleItemRequest() {
-                    Link = item.Dropshipping.SourceLink
-                });
+            var sourceItem = await search.ItemSearch(new SingleItemRequest() {
+                Link = item.Dropshipping.SourceLink
+            });
 
-            }
+            var rules = item.Dropshipping.Rules ?? DropshipListingRules.Default;
+
+            rules.ApplyRules(sourceItem, item.Product);
         }
     }
 }
