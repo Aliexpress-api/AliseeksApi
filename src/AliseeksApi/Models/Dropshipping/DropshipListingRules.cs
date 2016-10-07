@@ -13,7 +13,7 @@ namespace AliseeksApi.Models.Dropshipping
             {
                 return new DropshipListingRules()
                 {
-                    FixedPricePercentage = 10,
+                    FixedPricePercentage = 0.10m,
                     FixedPriceAdjustment = 10,
                     FixedStockAdjustment = -5
                 };

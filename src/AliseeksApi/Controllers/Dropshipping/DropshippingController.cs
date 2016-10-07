@@ -34,7 +34,7 @@ namespace AliseeksApi.Controllers
 
         [HttpPost]
         [Route("/api/[controller]/add")]
-        public async Task<IActionResult> Add([FromBody]SingleItemRequest item)
+        public async Task<IActionResult> Add([FromQuery]SingleItemRequest item)
         {
             if (HttpContext.User.Identity.IsAuthenticated)
                 item.Username = HttpContext.User.Identity.Name;
@@ -86,6 +86,27 @@ namespace AliseeksApi.Controllers
             var account = await dropship.GetAccount(username);
 
             return Json(account);
+        }
+
+        [HttpGet]
+        [Route("/api/[controller]/account/orders")]
+        public async Task<IActionResult> GetOrders()
+        {
+            var username = "Guest";
+
+            if (HttpContext.User.Identity.IsAuthenticated)
+                username = HttpContext.User.Identity.Name;
+
+            var orders = await dropship.GetOrders(username);
+
+            return Json(orders);
+        }
+
+        [HttpPost]
+        [Route("api/[controller]/account")]
+        public async Task<IActionResult> CreateAccount()
+        {
+            return Ok();
         }
     }
 }

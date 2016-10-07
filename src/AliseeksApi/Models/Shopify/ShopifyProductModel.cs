@@ -20,16 +20,13 @@ namespace AliseeksApi.Models.Shopify
         public string ProductType { get; set; }
         public ShopifyImageType[] Images { get; set; }
 
-        public List<object> Variants { get; set; }
-
-        public ShopifyProductModel()
-        {
-            Variants = new List<object>();
-        }
+        public List<ShopifyVarant> Variants { get; set; } = new List<ShopifyVarant>();
     }
 
     public class ShopifyImageType
     {
+        [JsonProperty("id", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public string ID { get; set; }
         public string Src { get; set; }
     }
 }

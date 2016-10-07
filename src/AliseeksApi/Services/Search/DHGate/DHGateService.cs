@@ -49,7 +49,7 @@ namespace AliseeksApi.Services.DHGate
 
                 try
                 {
-                    var response = await http.Get(endpoint);
+                    var response = await (await http.Get(endpoint)).Content.ReadAsStringAsync();
 
                     overallResult = new DHGatePageDecoder().DecodePage(response);
 
@@ -75,7 +75,7 @@ namespace AliseeksApi.Services.DHGate
 
                 try
                 {
-                    resultTasks.Add(http.Get(endpoint));
+                    resultTasks.Add((await http.Get(endpoint)).Content.ReadAsStringAsync());
                 }
                 catch (Exception e)
                 {
@@ -100,9 +100,9 @@ namespace AliseeksApi.Services.DHGate
             return (overallResult != null) ? overallResult : new SearchResultOverview();
         }
 
-        public override async Task<ItemDetail> SearchItem(ItemDetail item)
+        public override async Task<ItemDetail> SearchItem(SingleItemRequest item)
         {
-            return item;
+            return new ItemDetail();
         }
     }
 }

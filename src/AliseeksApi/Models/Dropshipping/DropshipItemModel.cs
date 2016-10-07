@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AliseeksApi.Storage.Postgres.ORM;
+using AliseeksApi.Models.Search;
 
 namespace AliseeksApi.Models.Dropshipping
 {
@@ -12,14 +13,11 @@ namespace AliseeksApi.Models.Dropshipping
         [DataColumn("id", Usages = new DataColumnUsage[] { DataColumnUsage.Create, DataColumnUsage.Retrieve, DataColumnUsage.Update, DataColumnUsage.Delete })]
         public int ID { get; set; }
 
-        [DataColumn("itemid")]
-        public string ItemID { get; set; }
-
         [DataColumn("username")]
         public string Username { get; set; }
 
-        [DataColumn("source")]
-        public string Source { get; set; }
+        [DataColumn("source", DbType = NpgsqlTypes.NpgsqlDbType.Jsonb)]
+        public SingleItemRequest Source { get; set; }
 
         [DataColumn("listingid")]
         public string ListingID { get; set; }
@@ -29,8 +27,5 @@ namespace AliseeksApi.Models.Dropshipping
 
         [DataColumn("rules", DbType = NpgsqlTypes.NpgsqlDbType.Jsonb)]
         public DropshipListingRules Rules { get; set; }
-
-        [DataColumn("sourcelink")]
-        public string SourceLink { get; set; }
     }
 }

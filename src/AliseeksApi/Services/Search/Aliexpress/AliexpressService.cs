@@ -62,7 +62,8 @@ namespace AliseeksApi.Services
 
             try
             {
-                response = await http.Get(endpoint);
+                var responseMessage = await http.Get(endpoint);
+                response = await responseMessage.Content.ReadAsStringAsync();
             }
             catch(Exception e)
             {
@@ -76,7 +77,7 @@ namespace AliseeksApi.Services
                 var freights = await CalculateFreight(new FreightAjaxRequest()
                 {
                     ProductID = item.ID,
-                    Country = "US",
+                    Country = item.ShipCountry,
                     CurrencyCode = "USD"
                 });
 
@@ -99,7 +100,7 @@ namespace AliseeksApi.Services
         {
             string endpoint = SearchEndpoints.AliexpressFreight(model.ProductID, model.CurrencyCode, model.Country);
 
-            var response = await http.Get(endpoint);
+            var response = await (await http.Get(endpoint)).Content.ReadAsStringAsync();
 
             try
             {
@@ -142,7 +143,7 @@ namespace AliseeksApi.Services
 
                 try
                 {
-                    resultTasks.Add(http.Get(endpoint));
+                    resultTasks.Add((await http.Get(endpoint)).Content.ReadAsStringAsync());
                 }
                 catch (Exception e)
                 {

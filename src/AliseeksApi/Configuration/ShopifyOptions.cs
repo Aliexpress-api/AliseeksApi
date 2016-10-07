@@ -10,5 +10,6 @@ namespace AliseeksApi.Configuration
         public string APIKey { get; set; }
         public string Password { get; set; }
         public string SharedSecret { get; set; }
+        public string StoreName { get; set; }
     }
 }

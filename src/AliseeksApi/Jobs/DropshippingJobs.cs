@@ -34,21 +34,32 @@ namespace AliseeksApi.Jobs
             if(skip > count) { return; }
 
             var items = await dbItems.GetMultipleWithAccount(itemsPerJob, skip);
-            var users = items.Select(x => x.Account.Username).Distinct();
-            var products = new List<DropshipItem>();
-
-            foreach(var user in users)
-            {
-                var userItems = items.Where(x => x.Account.Username == user).Select(x => x.Item).ToArray();
-                products.AddRange(await dropship.GetProducts(userItems));
-            }
-            
+            var products = new List<DropshipItem>();         
 
             foreach(var item in items)
             {
                 if(item.Account.Subscription != "Expired")
                 {
-                    await dropship.SyncProduct(item.Item);
+                    //Get Shopify product information from product list
+                    var product = products.FirstOrDefault(x => x.Product.ID == item.Item.ListingID);
+                    
+                    //Retrieve products for a user from shopify once
+                    if (product == null && products.Count(x => x.Dropshipping.Username == item.Account.Username) == 0)
+                    {
+                        var userItems = items.Where(x => x.Account.Username == item.Account.Username).Select(x => x.Item).ToArray();
+                        var shopifyProducts = await dropship.GetProducts(userItems);
+                        if (shopifyProducts != null)
+                            products.AddRange(shopifyProducts);
+
+                        product = products.FirstOrDefault(x => x.Product.ID == item.Item.ListingID);
+                    }
+
+                    //If its still null then either it was delete from Shopify product list or we are having communication issues
+                    if (product == null)
+                        continue;
+
+                    
+                    await dropship.SyncProduct(product);
                 }
             }
 

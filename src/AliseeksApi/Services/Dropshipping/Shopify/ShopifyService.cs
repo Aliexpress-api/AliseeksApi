@@ -14,6 +14,7 @@ using System.Net.Http;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using Newtonsoft.Json.Linq;
+using AliseeksApi.Models.Dropshipping.Orders;
 
 namespace AliseeksApi.Services.Dropshipping.Shopify
 {
@@ -38,14 +39,15 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
 
         public async Task<ShopifyProductModel> AddProduct(ShopifyProductModel product)
         {
-            string endpoint = ShopifyEndpoints.BaseEndpoint(config.APIKey, config.Password, "Aliseeks.MyShopify", ShopifyEndpoints.Products);
+            string endpoint = ShopifyEndpoints.BaseEndpoint(config.APIKey, config.Password, config.StoreName, ShopifyEndpoints.Products);
 
             var requestType = new
             {
                 Product = product
             };
 
-            var content = new StringContent(JsonConvert.SerializeObject(requestType, jsonSettings));
+            var requestContent = JsonConvert.SerializeObject(requestType, jsonSettings);
+            var content = new StringContent(requestContent);
             content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
 
             var response = await http.Post(endpoint, content, (client) =>
@@ -67,7 +69,7 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
 
         public async Task<ShopifyProductModel[]> GetProducts()
         {
-            string endpoint = ShopifyEndpoints.BaseEndpoint(config.APIKey, config.Password, "Aliseeks.MyShopify", ShopifyEndpoints.Products);
+            string endpoint = ShopifyEndpoints.BaseEndpoint(config.APIKey, config.Password, config.StoreName, ShopifyEndpoints.Products);
 
             var response = await http.Get(endpoint, (client) =>
             {
@@ -88,7 +90,7 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
 
         public async Task<ShopifyProductModel[]> GetProductsByID(string[] ids)
         {
-            string endpoint = ShopifyEndpoints.BaseEndpoint(config.APIKey, config.Password, "Aliseeks.MyShopify", ShopifyEndpoints.Products) + $"?ids={String.Join(",", ids)}";
+            string endpoint = ShopifyEndpoints.BaseEndpoint(config.APIKey, config.Password, config.StoreName, ShopifyEndpoints.Products) + $"?ids={String.Join(",", ids)}";
 
             var response = await http.Get(endpoint, (client) =>
             {
@@ -105,6 +107,57 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
             }
 
             return new ShopifyProductModel[0];
+        }
+
+        public async Task<ShopifyProductModel> UpdateProduct(ShopifyProductModel product)
+        {
+            string endpoint = ShopifyEndpoints.BaseEndpoint(config.APIKey, config.Password, config.StoreName, "products") + $"/{product.ID}.json";
+
+            var requestType = new
+            {
+                Product = product
+            };
+
+            var requestContent = JsonConvert.SerializeObject(requestType, jsonSettings);
+            var content = new StringContent(requestContent);
+            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+
+            var response = await http.Put(endpoint, content, (client) =>
+            {
+                addAuthenticatoin(client);
+            });
+
+            string message = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                var productResponse = JObject.Parse(message).SelectToken("product").ToString();
+                var ret = JsonConvert.DeserializeObject<ShopifyProductModel>(productResponse, jsonSettings);
+                return ret;
+            }
+            else
+                return new ShopifyProductModel();
+        }
+
+        public async Task<ShopifyOrder[]> GetOrders()
+        {
+            string endpoint = ShopifyEndpoints.BaseEndpoint(config.APIKey, config.Password, config.StoreName, "orders.json") + "?fulfillment_status=unshipped,partial";
+
+            var response = await http.Get(endpoint, (client) =>
+            {
+                addAuthenticatoin(client);
+            });
+
+            string message = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                var ordersResponse = JObject.Parse(message).SelectToken("orders").ToString();
+                var ret = JsonConvert.DeserializeObject<ShopifyOrder[]>(ordersResponse, jsonSettings);
+                return ret;
+            }
+            else
+                return new ShopifyOrder[0];
         }
 
         void addAuthenticatoin(HttpClient client)

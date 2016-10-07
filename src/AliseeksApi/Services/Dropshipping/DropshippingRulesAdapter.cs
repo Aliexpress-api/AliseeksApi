@@ -7,6 +7,7 @@ using AliseeksApi.Models.Search;
 using AliseeksApi.Models;
 using AliseeksApi.Models.Dropshipping;
 using AliseeksApi.Services.Dropshipping.Shopify;
+using AliseeksApi.Utility.Extensions;
 
 namespace AliseeksApi.Services.Dropshipping
 {
@@ -21,15 +22,17 @@ namespace AliseeksApi.Services.Dropshipping
     public static class DropshippingRulesExtensions
     {
 
-        public static ShopifyProductModel ApplyRules(this DropshipListingRules rules, ItemDetail detail, ShopifyProductModel product)
+        public static bool ApplyRules(this DropshipListingRules rules, ItemDetail detail, ShopifyProductModel product)
         {
-            ApplyPricingRules(rules, detail, product);
-            ApplyStockRules(rules, detail, product);
+            var changes = false;
 
-            return product;
+            changes = changes.Consume(ApplyPricingRules(rules, detail, product));
+            changes = changes.Consume(ApplyStockRules(rules, detail, product));
+
+            return changes;
         }
 
-        private static ShopifyProductModel ApplyPricingRules(DropshipListingRules rules, ItemDetail detail, ShopifyProductModel product)
+        private static bool ApplyPricingRules(DropshipListingRules rules, ItemDetail detail, ShopifyProductModel product)
         {
             var actualPrice = detail.Price + detail.ShippingPrice;
             var adjusted = actualPrice;
@@ -53,12 +56,17 @@ namespace AliseeksApi.Services.Dropshipping
                 }
             }
 
-            product.Variants.Add(new ShopifyVariant().Price(adjusted).Build());
+            var variant = product.Variants.FirstOrDefault() ?? new ShopifyVarant();
+            if (variant.Price != Math.Truncate(adjusted * 100) / 100)
+            {
+                variant.Price = adjusted;
+                return true;
+            }
 
-            return product;
+            return false;
         }
 
-        private static ShopifyProductModel ApplyStockRules(DropshipListingRules rules, ItemDetail detail, ShopifyProductModel product)
+        private static bool ApplyStockRules(DropshipListingRules rules, ItemDetail detail, ShopifyProductModel product)
         {
             var actualStock = detail.Stock;
             var adjusted = actualStock;
@@ -75,9 +83,14 @@ namespace AliseeksApi.Services.Dropshipping
                 }
             }
 
-            product.Variants.Add(new ShopifyVariant().InventoryQuantity(adjusted).Build());
+            var variant = product.Variants.FirstOrDefault() ?? new ShopifyVarant();
+            if (variant.InventoryQuantity != adjusted)
+            {
+                variant.InventoryQuantity = adjusted;
+                return true;
+            }
 
-            return product;
+            return false;
         }
     }
 }

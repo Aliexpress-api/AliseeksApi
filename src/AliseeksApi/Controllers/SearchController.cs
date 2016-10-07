@@ -97,12 +97,7 @@ namespace AliseeksApi.Controllers
         [Route("/api/[controller]/item")]
         public async Task<IActionResult> GetSingleItem([FromQuery]SingleItemRequest request)
         {
-            var response = await search.ItemSearch(new ItemDetail()
-            {
-                Name = request.Title,
-                Source = request.Source,
-                ItemID = request.ID
-            });
+            var response = await search.ItemSearch(request);
 
             return Json(response);
         }

@@ -10,19 +10,6 @@ namespace AliseeksApi.Services
 {
     public class HttpService : IHttpService
     {
-        public async Task<string> Get(string endpoint)
-        {
-            HttpContent content = null;
-
-            using (HttpClient client = new HttpClient())
-            {
-                var response = await client.GetAsync(endpoint);
-                content = response.Content;
-            }
-
-            return await content.ReadAsStringAsync();
-        }
-
         public async Task<HttpResponseMessage> Get(string endpoint, Action<HttpClient> configuration = null)
         {
             var response = new HttpResponseMessage();
@@ -37,7 +24,8 @@ namespace AliseeksApi.Services
             {
                 try
                 {
-                    configuration(client);
+                    if(configuration != null)
+                        configuration(client);
 
                     response = await client.GetAsync(endpoint);
                 }
@@ -64,9 +52,38 @@ namespace AliseeksApi.Services
             {
                 try
                 {
-                    configuration(client);
+                    if (configuration != null)
+                        configuration(client);
 
                     response = await client.PostAsync(endpoint, content);
+                }
+                catch (Exception e)
+                {
+
+                }
+            }
+
+            return response;
+        }
+
+        public async Task<HttpResponseMessage> Put(string endpoint, HttpContent content, Action<HttpClient> configuration = null)
+        {
+            var response = new HttpResponseMessage();
+
+            HttpClientHandler handler = new HttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = (message, x502, chain, policy) =>
+            {
+                return true;
+            };
+
+            using (HttpClient client = new HttpClient(handler))
+            {
+                try
+                {
+                    if (configuration != null)
+                        configuration(client);
+
+                    response = await client.PutAsync(endpoint, content);
                 }
                 catch (Exception e)
                 {

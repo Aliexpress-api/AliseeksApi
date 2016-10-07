@@ -15,6 +15,8 @@ using Newtonsoft.Json;
 using AliseeksApi.Services.Aliexpress;
 using Microsoft.AspNetCore.Routing;
 using AliseeksApi.Exceptions;
+using AliseeksApi.Utility.Extensions;
+using AliseeksApi.Models.Dropshipping.Orders;
 
 namespace AliseeksApi.Services.Dropshipping
 {
@@ -128,6 +130,41 @@ namespace AliseeksApi.Services.Dropshipping
             return dropshipItems.ToArray();
         }
 
+        public async Task<DropshipOrder[]> GetOrders(string username)
+        {
+            var orders = new List<DropshipOrder>();
+
+            //Get unfulfilled orders & dropship items from db
+            var shopifyTask = shopify.GetOrders();
+            var dropshipTask = dbItems.GetMultipleByUsername(username);
+
+            var dropshipItems = await dropshipTask;
+            var shopifyItems = await shopifyTask;
+
+            foreach(var shopifyOrder in shopifyItems)
+            {
+                var dropshipItemsOnOrder = new List<DropshipItemModel>();
+                shopifyOrder.LineItems.ForEach(x =>
+                {
+                    var dropshipItem = dropshipItems.FirstOrDefault(ds => ds.ListingID == x.ProductID);
+
+                    if (dropshipItems != null)
+                        dropshipItemsOnOrder.Add(dropshipItem);
+                });
+
+                if (dropshipItemsOnOrder.Count == 0)
+                    continue;
+
+                orders.Add(new DropshipOrder()
+                {
+                    Order = shopifyOrder,
+                    Items = dropshipItemsOnOrder.ToArray()
+                });
+            }
+
+            return orders.ToArray();
+        }
+
         public async Task<DropshipItemModel> Update(DropshipItemModel model)
         {
             await dbItems.Save(model);
@@ -144,8 +181,7 @@ namespace AliseeksApi.Services.Dropshipping
                 Dropshipping = new DropshipItemModel()
                 {
                     Listing = "Shopify",
-                    Source = detail.Source,
-                    ItemID = detail.ItemID,
+                    Source = item,
                     Username = item.Username,
                     Rules = DropshipListingRules.Default
                 },
@@ -156,14 +192,15 @@ namespace AliseeksApi.Services.Dropshipping
                     Vendor = "Me", //TODO: GET RID
                     ProductType = detail.Source,
 
-                    Variants = new List<object>()
+                    Variants = new List<ShopifyVarant>()
                     {
-                        new ShopifyVariant()
-                        .InventoryPolicy(InventoryPolicy.Deny)
-                        .InventoryManagement(InventoryManagement.Shopify)
-                        .RequireShipping(true)
-                        .Taxable(false)
-                        .Build()
+                        new ShopifyVarant()
+                        {
+                            InventoryPolicy = InventoryPolicy.Deny,
+                            InventoryManagement = InventoryManagement.Shopify,
+                            RequiresShipping = true,
+                            Taxable = true
+                        }
                     }
                 }
             };
@@ -179,7 +216,7 @@ namespace AliseeksApi.Services.Dropshipping
 
             dropshipItem.Product.Images = images.ToArray();
 
-            dropshipItem.Product = dropshipItem.Dropshipping.Rules.ApplyRules(detail, dropshipItem.Product);
+            dropshipItem.Dropshipping.Rules.ApplyRules(detail, dropshipItem.Product);
 
             var product = await shopify.AddProduct(dropshipItem.Product);
 
@@ -190,17 +227,13 @@ namespace AliseeksApi.Services.Dropshipping
 
         public async Task AddProduct(DropshipItemModel model)
         {
-            if (model.SourceLink == null || model.SourceLink == String.Empty)
+            if (model.Source.Link.EmptyOrNull())
                 return;
 
-            switch(model.Source)
+            switch(model.Source.Source)
             {
                 case "Aliexpress":
-                    var routeValues = new AliexpressQueryString().DecodeItemLink(model.SourceLink);
-                    if (routeValues.ID == String.Empty)
-                        throw new AllowedException("Invalid Aliexpress Item Link");
-
-                    await AddProduct(routeValues);
+                    await AddProduct(model.Source);
                     break;
 
                 default:
@@ -208,15 +241,19 @@ namespace AliseeksApi.Services.Dropshipping
             }
         }
 
+        public async Task UpdateProduct(DropshipItem item)
+        {
+            await shopify.UpdateProduct(item.Product);
+        }
+
         public async Task SyncProduct(DropshipItem item)
         {
-            var sourceItem = await search.ItemSearch(new SingleItemRequest() {
-                Link = item.Dropshipping.SourceLink
-            });
+            var sourceItem = await search.ItemSearch(item.Dropshipping.Source);
 
             var rules = item.Dropshipping.Rules ?? DropshipListingRules.Default;
 
-            rules.ApplyRules(sourceItem, item.Product);
+            if(rules.ApplyRules(sourceItem, item.Product))
+                await UpdateProduct(item);
         }
     }
 }

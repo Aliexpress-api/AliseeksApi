@@ -12,6 +12,7 @@ namespace AliseeksApi.Models.Search
         public string ID { get; set; }
         public string Source { get; set; }
         public string Link { get; set; }
+        public string ShipCountry { get; set; } = "US";
 
         [JsonIgnore]
         public string Username { get; set; }
