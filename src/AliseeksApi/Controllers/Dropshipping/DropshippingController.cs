@@ -34,7 +34,7 @@ namespace AliseeksApi.Controllers
 
         [HttpPost]
         [Route("/api/[controller]/add")]
-        public async Task<IActionResult> Add([FromQuery]SingleItemRequest item)
+        public async Task<IActionResult> Add([FromBody]SingleItemRequest item)
         {
             if (HttpContext.User.Identity.IsAuthenticated)
                 item.Username = HttpContext.User.Identity.Name;
