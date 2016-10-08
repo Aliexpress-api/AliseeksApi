@@ -9,6 +9,9 @@ using AliseeksApi.Models.Search;
 using Microsoft.AspNetCore.Authorization;
 using AliseeksApi.Models.Dropshipping;
 using AliseeksApi.Services.Aliexpress;
+using AliseeksApi.Utility.Extensions;
+using AliseeksApi.Services.User;
+using AliseeksApi.Models.User;
 
 // For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -19,11 +22,13 @@ namespace AliseeksApi.Controllers
     {
         private readonly DropshippingService dropship;
         private readonly IRavenClient raven;
+        private readonly IUserService user;
 
-        public DropshippingController(DropshippingService dropship, IRavenClient raven)
+        public DropshippingController(DropshippingService dropship, IUserService user, IRavenClient raven)
         {
             this.dropship = dropship;
             this.raven = raven;
+            this.user = user;
         }
 
         // GET: /<controller>/
@@ -104,8 +109,20 @@ namespace AliseeksApi.Controllers
 
         [HttpPost]
         [Route("api/[controller]/account")]
-        public async Task<IActionResult> CreateAccount()
+        public async Task<IActionResult> CreateAccount([FromBody]DropshipAccountConfiguration config)
         {
+            if (config.Subscription.EmptyOrNull())
+                return NotFound();
+
+            var username = "Guest";
+
+            if (HttpContext.User.Identity.IsAuthenticated)
+                username = HttpContext.User.Identity.Name;
+
+            var account = await dropship.SetupAccount(config, username);
+
+            HttpContext.Response.Headers.Add("X-USER-TOKEN", user.CreateJWT(new UserLoginModel() { Username = username }, account));
+
             return Ok();
         }
     }

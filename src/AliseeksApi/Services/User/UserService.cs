@@ -18,6 +18,8 @@ using Microsoft.Extensions.Logging;
 using AliseeksApi.Utility.Extensions;
 using SharpRaven.Core;
 using SharpRaven.Core.Data;
+using AliseeksApi.Services.Dropshipping;
+using AliseeksApi.Models.Dropshipping;
 
 namespace AliseeksApi.Services.User
 {
@@ -28,15 +30,17 @@ namespace AliseeksApi.Services.User
         ISecurityHasher hasher;
         IEmailService email;
         IRavenClient raven;
+        DropshippingService dropship;
 
         public UserService(IJwtFactory jwtFactory, IUsersPostgres db, ISecurityHasher hasher,
-            IEmailService email, IRavenClient raven)
+            IEmailService email, IRavenClient raven, DropshippingService dropship)
         {
             this.jwtFactory = jwtFactory;
             this.db = db;
             this.hasher = hasher;
             this.email = email;
             this.raven = raven;
+            this.dropship = dropship;
         }
 
         public async Task<UserLoginResponse> Login(UserLoginModel model)
@@ -58,18 +62,28 @@ namespace AliseeksApi.Services.User
             if (hashedPassword != userModel.Password)
                 return new UserLoginResponse();
 
-            //Set security claims and encode into JWT
-            var claims = new Claim[]
-            {
-                new Claim(ClaimTypes.Name, model.Username.ToLower())
-            };
+            //Grab dropship account if any
+            var account = await dropship.GetAccount(userModel.Username);
 
             var response = new UserLoginResponse()
             {
-                Token = jwtFactory.GenerateToken(claims)
+                Token = CreateJWT(model, account)
             };
 
             return response;
+        }
+
+        public string CreateJWT(UserLoginModel user, DropshipAccount account)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, user.Username.ToLower())
+            };
+
+            if (account.Status == AccountStatus.Existing)
+                claims.Add(new Claim(ClaimTypes.Role, account.Subscription));
+
+            return jwtFactory.GenerateToken(claims.ToArray());
         }
 
         public async Task<BaseServiceResponse> Logout(UserLogoutModel model)

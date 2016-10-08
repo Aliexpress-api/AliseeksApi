@@ -42,7 +42,9 @@ namespace AliseeksApi.Controllers
             if (response.Token == null)
                 return NotFound();
 
-            return Json(response);
+            HttpContext.Response.Headers.Add("X-USER-TOKEN", response.Token);
+
+            return Ok();
         }
 
         [HttpPost]
