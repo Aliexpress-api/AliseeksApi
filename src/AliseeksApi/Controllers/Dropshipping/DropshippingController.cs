@@ -12,6 +12,9 @@ using AliseeksApi.Services.Aliexpress;
 using AliseeksApi.Utility.Extensions;
 using AliseeksApi.Services.User;
 using AliseeksApi.Models.User;
+using AliseeksApi.Services.Dropshipping.Shopify;
+using AliseeksApi.Models.Shopify;
+using AliseeksApi.Storage.Postgres.OAuth;
 
 // For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -23,12 +26,14 @@ namespace AliseeksApi.Controllers
         private readonly DropshippingService dropship;
         private readonly IRavenClient raven;
         private readonly IUserService user;
+        private readonly ShopifyService shopify;
 
-        public DropshippingController(DropshippingService dropship, IUserService user, IRavenClient raven)
+        public DropshippingController(DropshippingService dropship, ShopifyService shopify, IUserService user, IRavenClient raven)
         {
             this.dropship = dropship;
             this.raven = raven;
             this.user = user;
+            this.shopify = shopify;
         }
 
         // GET: /<controller>/
@@ -46,7 +51,7 @@ namespace AliseeksApi.Controllers
             else
                 item.Username = "Guest";
 
-            await dropship.AddProduct(item);
+            await dropship.AddProduct(item.Username, item);
 
             return Ok();
         }
@@ -119,6 +124,47 @@ namespace AliseeksApi.Controllers
             var orders = await dropship.GetOrders(username);
 
             return Json(orders);
+        }
+
+        [HttpGet]
+        [Route("/api/[controller]/account/shopify/oauth")]
+        public IActionResult GetShopifyOAuth(string shop, string redirect, [FromServices]ShopifyOAuth oauth)
+        {
+            var request = oauth.GetOAuthRequest(shop, redirect);
+
+            return Json(request);
+        }
+
+        [HttpPost]
+        [Route("/api/[controller]/account/shopify/oauth")]
+        public async Task<IActionResult> CreateShopifyOAuth([FromBody]ShopifyOAuthResponse response, [FromServices]ShopifyOAuth oauth)
+        {
+            if (!oauth.VerifyOAuthRequest(response))
+                return NotFound();
+
+            var username = String.Empty;
+
+            if (HttpContext.User.Identity.IsAuthenticated)
+                username = HttpContext.User.Identity.Name;
+
+            if (!await shopify.AddShopifyIntegration(username, response, oauth))
+                return NotFound();
+
+            return Ok();
+        }
+
+        [HttpGet]
+        [Route("/api/[controller]/account/integrations")]
+        public async Task<IActionResult> GetIntegrations([FromServices]OAuthPostgres oauthdb)
+        {
+            var username = "Guest";
+
+            if (HttpContext.User.Identity.IsAuthenticated)
+                username = HttpContext.User.Identity.Name;
+
+            var integrations = await dropship.GetIntegrations(username, oauthdb);
+
+            return Json(integrations);
         }
 
         [HttpPost]

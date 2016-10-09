@@ -156,6 +156,7 @@ namespace AliseeksApi
             services.AddTransient<ILoggingService, LoggingService>();
             services.AddTransient<DropshippingService>();
             services.AddTransient<ShopifyService>();
+            services.AddTransient<ShopifyOAuth>();
 
             services.AddTransient<WebSearchService[]>((provider) =>
             {

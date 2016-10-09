@@ -47,7 +47,7 @@ namespace AliseeksApi.Jobs
                     if (product == null && products.Count(x => x.Dropshipping.Username == item.Account.Username) == 0)
                     {
                         var userItems = items.Where(x => x.Account.Username == item.Account.Username).Select(x => x.Item).ToArray();
-                        var shopifyProducts = await dropship.GetProducts(userItems);
+                        var shopifyProducts = await dropship.GetProducts(item.Account.Username, userItems);
                         if (shopifyProducts != null)
                             products.AddRange(shopifyProducts);
 
@@ -59,7 +59,7 @@ namespace AliseeksApi.Jobs
                         continue;
 
                     
-                    await dropship.SyncProduct(product);
+                    await dropship.SyncProduct(item.Account.Username, product);
                 }
             }
 

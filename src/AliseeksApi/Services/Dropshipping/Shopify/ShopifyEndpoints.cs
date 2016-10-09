@@ -9,9 +9,14 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
     {
         public const string Products = "products.json";
 
-        public static string BaseEndpoint(string apikey, string password, string store, string endpoint)
+        public static string BaseEndpoint(string store, string endpoint, string apikey = "", string password = "")
         {
-            return $"https://{store}.com/admin/{endpoint}";
+            return $"https://{store}/admin/{endpoint}";
+        }
+
+        public static string OAuthEndpoint(string hostname)
+        {
+            return $"https://{hostname}/admin/oauth/access_token";
         }
     }
 }

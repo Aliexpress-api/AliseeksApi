@@ -27,12 +27,9 @@ namespace AliseeksApi.Storage.Postgres.Dropshipping
 
             await db.CommandReaderAsync(command, reader =>
             {
-                while (reader.Read())
-                {
-                    var item = new DropshipItemModel();
-                    LoadModel(reader, item);
-                    items.Add(item);
-                }
+                var item = new DropshipItemModel();
+                LoadModel(reader, item);
+                items.Add(item);
             });
 
             return items.ToArray();

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AliseeksApi.Storage.Postgres.ORM;
+using Newtonsoft.Json;
 
 namespace AliseeksApi.Models.OAuth
 {
@@ -20,5 +21,26 @@ namespace AliseeksApi.Models.OAuth
 
         [DataColumn("service")]
         public string Service { get; set; }
+
+        [DataColumn("meta", DbType = NpgsqlTypes.NpgsqlDbType.Jsonb)]
+        public object Meta { get; set; }
+
+        [DataColumn("extra", DbType = NpgsqlTypes.NpgsqlDbType.Jsonb)]
+        public Dictionary<string, string> Extra { get; set; } = new Dictionary<string, string>();
+    }
+
+    public class OAuthShopifyModel : OAuthAccountModel
+    {
+        [JsonIgnore]
+        public string Shop
+        {
+            get
+            {
+                if (Extra.ContainsKey("Shop"))
+                    return Extra["Shop"];
+
+                throw new Exception("OAuth Model not a valid model");
+            }
+        }
     }
 }

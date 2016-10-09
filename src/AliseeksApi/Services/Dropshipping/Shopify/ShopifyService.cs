@@ -10,11 +10,14 @@ using System.Net.Http;
 using Newtonsoft.Json;
 using System.Net;
 using System.Net.Security;
-using System.Net.Http;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
 using Newtonsoft.Json.Linq;
 using AliseeksApi.Models.Dropshipping.Orders;
+using AliseeksApi.Utility;
+using AliseeksApi.Storage.Postgres.OAuth;
+using AliseeksApi.Models.OAuth;
+using AliseeksApi.Storage.Cache;
 
 namespace AliseeksApi.Services.Dropshipping.Shopify
 {
@@ -23,6 +26,9 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
         private readonly IHttpService http;
         private readonly IRavenClient raven;
         private readonly ShopifyOptions config;
+        private readonly OAuthPostgres oauthDb;
+        private readonly ShopifyOAuth oauth;
+        private readonly IApplicationCache cache;
 
         JsonSerializerSettings jsonSettings = new JsonSerializerSettings()
         {
@@ -30,16 +36,63 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
             DefaultValueHandling = DefaultValueHandling.Ignore
         };
 
-        public ShopifyService(IHttpService http, IRavenClient raven, IOptions<ShopifyOptions> config)
+        public ShopifyService(IHttpService http, IApplicationCache cache,
+            ShopifyOAuth oauth, OAuthPostgres oauthDb, IRavenClient raven, IOptions<ShopifyOptions> config)
         {
             this.http = http;
             this.raven = raven;
             this.config = config.Value;
+            this.oauthDb = oauthDb;
+            this.cache = cache;
         }
 
-        public async Task<ShopifyProductModel> AddProduct(ShopifyProductModel product)
+        public async Task<bool> AddShopifyIntegration(string username, ShopifyOAuthResponse oauth, ShopifyOAuth verify)
         {
-            string endpoint = ShopifyEndpoints.BaseEndpoint(config.APIKey, config.Password, config.StoreName, ShopifyEndpoints.Products);
+            var endpoint = ShopifyEndpoints.OAuthEndpoint(oauth.Shop);
+
+            var requestType = new
+            {
+                client_id = config.ClientID,
+                client_secret = config.ClientSecret,
+                code = oauth.Code
+            };
+
+            var requestContent = JsonConvert.SerializeObject(requestType, jsonSettings);
+            var content = new JsonContent(requestContent);
+
+            var response = await http.Post(endpoint, content);
+
+            string message = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                var tokenResponse = JsonConvert.DeserializeObject<ShopifyOAuthAccessResponse>(message, jsonSettings);
+                verify.VerifyScope(tokenResponse.Scope);
+
+                await oauthDb.Save(new OAuthAccountModel()
+                {
+                    AccessToken = tokenResponse.AccessToken,
+                    Username = username,
+                    Service = "Shopify",
+                    Extra = new Dictionary<string, string>()
+                    {
+                        { "Shop", oauth.Shop }
+                    }
+                });
+
+                return true;
+            }
+            else
+                return false;            
+        }
+
+        public async Task<ShopifyProductModel> AddProduct(string username, ShopifyProductModel product)
+        {
+            var creds = await GetCredentials(username);
+            if (creds == null)
+                return new ShopifyProductModel(); //Not integrated into shopify
+
+            string endpoint = ShopifyEndpoints.BaseEndpoint(creds.Shop, ShopifyEndpoints.Products);
 
             var requestType = new
             {
@@ -52,7 +105,7 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
 
             var response = await http.Post(endpoint, content, (client) =>
                {
-                   addAuthenticatoin(client);
+                   addAuthenticatoin(client, creds.AccessToken);
                });
 
             string message = await response.Content.ReadAsStringAsync();
@@ -67,13 +120,17 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
                 return new ShopifyProductModel();
         }
 
-        public async Task<ShopifyProductModel[]> GetProducts()
+        public async Task<ShopifyProductModel[]> GetProducts(string username)
         {
-            string endpoint = ShopifyEndpoints.BaseEndpoint(config.APIKey, config.Password, config.StoreName, ShopifyEndpoints.Products);
+            var creds = await GetCredentials(username);
+            if (creds == null)
+                return new ShopifyProductModel[0]; //Not integrated into shopify
+
+            string endpoint = ShopifyEndpoints.BaseEndpoint(creds.Shop, ShopifyEndpoints.Products);
 
             var response = await http.Get(endpoint, (client) =>
             {
-                addAuthenticatoin(client);
+                addAuthenticatoin(client, creds.AccessToken);
             });
 
             string message = await response.Content.ReadAsStringAsync();
@@ -88,13 +145,17 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
             return new ShopifyProductModel[0];       
         }
 
-        public async Task<ShopifyProductModel[]> GetProductsByID(string[] ids)
+        public async Task<ShopifyProductModel[]> GetProductsByID(string username, string[] ids)
         {
-            string endpoint = ShopifyEndpoints.BaseEndpoint(config.APIKey, config.Password, config.StoreName, ShopifyEndpoints.Products) + $"?ids={String.Join(",", ids)}";
+            var creds = await GetCredentials(username);
+            if (creds == null)
+                return new ShopifyProductModel[0]; //Not integrated into shopify
+
+            string endpoint = ShopifyEndpoints.BaseEndpoint(creds.Shop, ShopifyEndpoints.Products) + $"?ids={String.Join(",", ids)}";
 
             var response = await http.Get(endpoint, (client) =>
             {
-                addAuthenticatoin(client);
+                addAuthenticatoin(client, creds.AccessToken);
             });
 
             string message = await response.Content.ReadAsStringAsync();
@@ -109,9 +170,13 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
             return new ShopifyProductModel[0];
         }
 
-        public async Task<ShopifyProductModel> UpdateProduct(ShopifyProductModel product)
+        public async Task<ShopifyProductModel> UpdateProduct(string username, ShopifyProductModel product)
         {
-            string endpoint = ShopifyEndpoints.BaseEndpoint(config.APIKey, config.Password, config.StoreName, "products") + $"/{product.ID}.json";
+            var creds = await GetCredentials(username);
+            if (creds == null)
+                return new ShopifyProductModel(); //Not integrated into shopify
+
+            string endpoint = ShopifyEndpoints.BaseEndpoint(creds.Shop, "products") + $"/{product.ID}.json";
 
             var requestType = new
             {
@@ -124,7 +189,7 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
 
             var response = await http.Put(endpoint, content, (client) =>
             {
-                addAuthenticatoin(client);
+                addAuthenticatoin(client, creds.AccessToken);
             });
 
             string message = await response.Content.ReadAsStringAsync();
@@ -139,13 +204,17 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
                 return new ShopifyProductModel();
         }
 
-        public async Task<ShopifyOrder[]> GetOrders()
+        public async Task<ShopifyOrder[]> GetOrders(string username)
         {
-            string endpoint = ShopifyEndpoints.BaseEndpoint(config.APIKey, config.Password, config.StoreName, "orders.json") + "?fulfillment_status=unshipped,partial";
+            var creds = await GetCredentials(username);
+            if (creds == null)
+                return new ShopifyOrder[0]; //Not integrated into shopify
+
+            string endpoint = ShopifyEndpoints.BaseEndpoint(creds.Shop, "orders.json") + "?fulfillment_status=unshipped,partial";
 
             var response = await http.Get(endpoint, (client) =>
             {
-                addAuthenticatoin(client);
+                addAuthenticatoin(client, creds.AccessToken);
             });
 
             string message = await response.Content.ReadAsStringAsync();
@@ -160,10 +229,31 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
                 return new ShopifyOrder[0];
         }
 
-        void addAuthenticatoin(HttpClient client)
+        async Task<OAuthShopifyModel> GetCredentials(string username)
         {
-            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(
-                System.Text.Encoding.UTF8.GetBytes($"{config.APIKey}:{config.Password}")));
+            var key = $"OAuth:Shopify:{username}";
+
+            if (await cache.Exists(key))
+                return JsonConvert.DeserializeObject<OAuthShopifyModel>(await cache.GetString(key));
+
+            var integrations = await oauthDb.GetMultipleByUsername(username);
+
+            var shopifyIntegration = integrations.FirstOrDefault(x => x.Service == "Shopify");
+
+            if (shopifyIntegration != null)
+            {
+                await cache.StoreString(key, JsonConvert.SerializeObject(shopifyIntegration));
+                return JsonConvert.DeserializeObject<OAuthShopifyModel>(JsonConvert.SerializeObject(shopifyIntegration));
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        void addAuthenticatoin(HttpClient client, string accesstoken)
+        {
+            client.DefaultRequestHeaders.Add("X-Shopify-Access-Token", accesstoken);
         }
     }
 }

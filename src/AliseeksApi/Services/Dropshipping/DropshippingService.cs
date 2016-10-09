@@ -17,6 +17,8 @@ using Microsoft.AspNetCore.Routing;
 using AliseeksApi.Exceptions;
 using AliseeksApi.Utility.Extensions;
 using AliseeksApi.Models.Dropshipping.Orders;
+using AliseeksApi.Storage.Postgres.OAuth;
+using AliseeksApi.Models.OAuth;
 
 namespace AliseeksApi.Services.Dropshipping
 {
@@ -27,6 +29,7 @@ namespace AliseeksApi.Services.Dropshipping
         private readonly DropshipItemsPostgres dbItems;
         private readonly DropshipAccountsPostgres dbAccounts;
         private readonly IApplicationCache cache;
+        private readonly OAuthPostgres oauth;
 
         public DropshippingService(ShopifyService shopify, ISearchService search, DropshipItemsPostgres dbItems, DropshipAccountsPostgres dbAccounts, IApplicationCache cache)
         {
@@ -113,7 +116,7 @@ namespace AliseeksApi.Services.Dropshipping
                 ids.Add(item.ListingID);
             }
 
-            var shopifyItems = await shopify.GetProductsByID(ids.ToArray());
+            var shopifyItems = await shopify.GetProductsByID(username, ids.ToArray());
 
             foreach(var shopifyItem in shopifyItems)
             {
@@ -128,7 +131,7 @@ namespace AliseeksApi.Services.Dropshipping
             return dropshipItems.ToArray();
         }
 
-        public async Task<DropshipItem[]> GetProducts(DropshipItemModel[] items)
+        public async Task<DropshipItem[]> GetProducts(string username, DropshipItemModel[] items)
         {
             var dropshipItems = new List<DropshipItem>();
 
@@ -138,7 +141,7 @@ namespace AliseeksApi.Services.Dropshipping
                 ids.Add(item.ListingID);
             }
 
-            var shopifyItems = await shopify.GetProductsByID(ids.ToArray());
+            var shopifyItems = await shopify.GetProductsByID(username, ids.ToArray());
 
             foreach (var shopifyItem in shopifyItems)
             {
@@ -158,7 +161,7 @@ namespace AliseeksApi.Services.Dropshipping
             var orders = new List<DropshipOrder>();
 
             //Get unfulfilled orders & dropship items from db
-            var shopifyTask = shopify.GetOrders();
+            var shopifyTask = shopify.GetOrders(username);
             var dropshipTask = dbItems.GetMultipleByUsername(username);
 
             if (shopifyTask.IsFaulted || dropshipTask.IsFaulted)
@@ -198,7 +201,7 @@ namespace AliseeksApi.Services.Dropshipping
             return model;
         }
 
-        public async Task AddProduct(SingleItemRequest item)
+        public async Task AddProduct(string username, SingleItemRequest item)
         {
             var detail = await search.ItemSearch(item);
 
@@ -245,14 +248,14 @@ namespace AliseeksApi.Services.Dropshipping
 
             dropshipItem.Dropshipping.Rules.ApplyRules(detail, dropshipItem.Product);
 
-            var product = await shopify.AddProduct(dropshipItem.Product);
+            var product = await shopify.AddProduct(username, dropshipItem.Product);
 
             dropshipItem.Dropshipping.ListingID = product.ID;
 
             await dbItems.Save(dropshipItem.Dropshipping);
         }
 
-        public async Task AddProduct(DropshipItemModel model)
+        public async Task AddProduct(string username, DropshipItemModel model)
         {
             if (model.Source.Link.EmptyOrNull())
                 return;
@@ -260,7 +263,7 @@ namespace AliseeksApi.Services.Dropshipping
             switch(model.Source.Source)
             {
                 case "Aliexpress":
-                    await AddProduct(model.Source);
+                    await AddProduct(username, model.Source);
                     break;
 
                 default:
@@ -268,19 +271,40 @@ namespace AliseeksApi.Services.Dropshipping
             }
         }
 
-        public async Task UpdateProduct(DropshipItem item)
+        public async Task UpdateProduct(string username, DropshipItem item)
         {
-            await shopify.UpdateProduct(item.Product);
+            await shopify.UpdateProduct(username, item.Product);
         }
 
-        public async Task SyncProduct(DropshipItem item)
+        public async Task SyncProduct(string username, DropshipItem item)
         {
             var sourceItem = await search.ItemSearch(item.Dropshipping.Source);
 
             var rules = item.Dropshipping.Rules ?? DropshipListingRules.Default;
 
             if(rules.ApplyRules(sourceItem, item.Product))
-                await UpdateProduct(item);
+                await UpdateProduct(username, item);
+        }
+
+        public async Task<DropshipIntegration[]> GetIntegrations(string username, OAuthPostgres oauthdb)
+        {
+            var items = await oauthdb.GetMultipleByUsername(username);
+            var integrations = new List<DropshipIntegration>();
+
+            var shopifyIntegration = items.FirstOrDefault(x => x.Service == "Shopify");
+
+            if(shopifyIntegration != null)
+            {
+                var shopifyTyped = JsonConvert.DeserializeObject<OAuthShopifyModel>(JsonConvert.SerializeObject(shopifyIntegration));
+
+                integrations.Add(new DropshipIntegration()
+                {
+                    Service = "Shopify",
+                    AccountInfo = shopifyTyped.Shop
+                });
+            }
+
+            return integrations.ToArray();
         }
     }
 }
