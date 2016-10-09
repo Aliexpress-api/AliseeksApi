@@ -51,6 +51,26 @@ namespace AliseeksApi.Services.Dropshipping
             return dropshipAccount;
         }
 
+        public async Task<DropshipOverview> GetOverview(string username)
+        {
+            var accountTask = GetAccount(username);
+            var productsTask = GetProducts(username);
+            var ordersTask = GetOrders(username);
+
+            var account = await accountTask;
+            var items = await productsTask;
+            var orders = await ordersTask;
+
+            var dropshipOverview = new DropshipOverview()
+            {
+                Account = account,
+                Items = items,
+                Orders = orders
+            };
+
+            return dropshipOverview;
+        }
+
         public async Task<DropshipAccount> GetAccount(string username)
         {
             //Check cache for account info
@@ -83,6 +103,9 @@ namespace AliseeksApi.Services.Dropshipping
             var dropshipItems = new List<DropshipItem>();
 
             var items = await dbItems.GetMultipleByUsername(username);
+
+            if (items.Length == 0)
+                return new DropshipItem[0];
 
             var ids = new List<string>();
             foreach(var item in items)
@@ -138,6 +161,9 @@ namespace AliseeksApi.Services.Dropshipping
             var shopifyTask = shopify.GetOrders();
             var dropshipTask = dbItems.GetMultipleByUsername(username);
 
+            if (shopifyTask.IsFaulted || dropshipTask.IsFaulted)
+                return new DropshipOrder[0];
+
             var dropshipItems = await dropshipTask;
             var shopifyItems = await shopifyTask;
 
@@ -189,8 +215,6 @@ namespace AliseeksApi.Services.Dropshipping
                 {
                     BodyHtml = detail.Description,
                     Title = detail.Name,
-                    Vendor = "Me", //TODO: GET RID
-                    ProductType = detail.Source,
 
                     Variants = new List<ShopifyVarant>()
                     {
@@ -213,6 +237,9 @@ namespace AliseeksApi.Services.Dropshipping
                     Src = image
                 });
             }
+
+            if (images.Count > 0)
+                dropshipItem.Dropshipping.Image = images[0].Src;
 
             dropshipItem.Product.Images = images.ToArray();
 

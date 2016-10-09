@@ -80,6 +80,20 @@ namespace AliseeksApi.Controllers
         }
 
         [HttpGet]
+        [Route("/api/[controller]/overview")]
+        public async Task<IActionResult> GetOverview()
+        {
+            var username = "Guest";
+
+            if (HttpContext.User.Identity.IsAuthenticated)
+                username = HttpContext.User.Identity.Name;
+
+            var overview = await dropship.GetOverview(username);
+
+            return Json(overview);
+        }
+
+        [HttpGet]
         [Route("/api/[controller]/account")]
         public async Task<IActionResult> GetAccount()
         {

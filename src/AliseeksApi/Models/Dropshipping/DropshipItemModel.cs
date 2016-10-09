@@ -25,6 +25,9 @@ namespace AliseeksApi.Models.Dropshipping
         [DataColumn("listing")]
         public string Listing { get; set; }
 
+        [DataColumn("image")]
+        public string Image { get; set; }
+
         [DataColumn("rules", DbType = NpgsqlTypes.NpgsqlDbType.Jsonb)]
         public DropshipListingRules Rules { get; set; }
     }
