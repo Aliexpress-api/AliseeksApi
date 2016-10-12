@@ -9,7 +9,7 @@ namespace AliseeksApi.Models.Dropshipping
     public class DropshipOverview
     {
         public DropshipAccount Account { get; set; }
-        public DropshipOrder[] Orders { get; set; }
-        public DropshipItem[] Items { get; set; }
+        public int IntegrationCount { get; set; }
+        public int ProductCount { get; set; }
     }
 }

@@ -29,15 +29,17 @@ namespace AliseeksApi.Services.Dropshipping
         private readonly DropshipItemsPostgres dbItems;
         private readonly DropshipAccountsPostgres dbAccounts;
         private readonly IApplicationCache cache;
-        private readonly OAuthPostgres oauth;
+        private readonly OAuthPostgres dbOAuth;
 
-        public DropshippingService(ShopifyService shopify, ISearchService search, DropshipItemsPostgres dbItems, DropshipAccountsPostgres dbAccounts, IApplicationCache cache)
+        public DropshippingService(ShopifyService shopify, ISearchService search,
+            OAuthPostgres dbOauth, DropshipItemsPostgres dbItems, DropshipAccountsPostgres dbAccounts, IApplicationCache cache)
         {
             this.shopify = shopify;
             this.search = search;
             this.dbItems = dbItems;
             this.dbAccounts = dbAccounts;
             this.cache = cache;
+            this.dbOAuth = dbOauth;
         }
 
         public async Task<DropshipAccount> SetupAccount(DropshipAccountConfiguration account, string username)
@@ -57,18 +59,19 @@ namespace AliseeksApi.Services.Dropshipping
         public async Task<DropshipOverview> GetOverview(string username)
         {
             var accountTask = GetAccount(username);
-            var productsTask = GetProducts(username);
-            var ordersTask = GetOrders(username);
+            var productsTask = dbItems.GetMultipleByUsername(username);
+            var integrationsTask = dbOAuth.GetMultipleByUsername(username);
+            //var ordersTask = GetOrders(username);
 
             var account = await accountTask;
             var items = await productsTask;
-            var orders = await ordersTask;
+            var integrations = await integrationsTask;
 
             var dropshipOverview = new DropshipOverview()
             {
                 Account = account,
-                Items = items,
-                Orders = orders
+                IntegrationCount = integrations.Length,
+                ProductCount = items.Length
             };
 
             return dropshipOverview;
@@ -101,7 +104,7 @@ namespace AliseeksApi.Services.Dropshipping
             return accountInfo;
         }
 
-        public async Task<DropshipItem[]> GetProducts(string username)
+        public async Task<DropshipItem[]> GetProducts(string username, int offset = 0, int limit = 50)
         {
             var dropshipItems = new List<DropshipItem>();
 
@@ -217,7 +220,7 @@ namespace AliseeksApi.Services.Dropshipping
                 Product = new ShopifyProductModel()
                 {
                     BodyHtml = detail.Description,
-                    Title = detail.Name,
+                    Title = detail.Name.Replace("/", "-"), //Fix slash in name issue
 
                     Variants = new List<ShopifyVarant>()
                     {
@@ -286,9 +289,9 @@ namespace AliseeksApi.Services.Dropshipping
                 await UpdateProduct(username, item);
         }
 
-        public async Task<DropshipIntegration[]> GetIntegrations(string username, OAuthPostgres oauthdb)
+        public async Task<DropshipIntegration[]> GetIntegrations(string username)
         {
-            var items = await oauthdb.GetMultipleByUsername(username);
+            var items = await dbOAuth.GetMultipleByUsername(username);
             var integrations = new List<DropshipIntegration>();
 
             var shopifyIntegration = items.FirstOrDefault(x => x.Service == "Shopify");

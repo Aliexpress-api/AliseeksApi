@@ -17,7 +17,8 @@ namespace AliseeksApi.Utility
 
         public static string AliexpressItemUrl(string itemTitle, string itemId)
         {
-            return $@"http://www.aliexpress.com/item/{itemTitle.Replace(" ", "-")}/{itemId}.html";
+            itemTitle = itemTitle.Replace("/", "-").Replace(" ", "-"); //Fix slash in item title issue
+            return $@"http://www.aliexpress.com/item/{itemTitle}/{itemId}.html";
         }
 
         public static string AliexpressFreight(string productID, string currencyCode, string country)
