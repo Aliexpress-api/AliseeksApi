@@ -99,6 +99,11 @@ namespace AliseeksApi.Controllers
         {
             var response = await search.ItemSearch(request);
 
+            if(response == null)
+            {
+                return NotFound();
+            }
+
             return Json(response);
         }
     }
