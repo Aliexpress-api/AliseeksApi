@@ -35,6 +35,23 @@ namespace AliseeksApi.Storage.Postgres.Dropshipping
             return items.ToArray();
         }
 
+        public async Task<DropshipItemModel> GetOneByID(int id)
+        {
+            var command = new NpgsqlCommand();
+            command.CommandText = $"SELECT {ORMQueryHelper.GetSelectColumns<DropshipItemModel>()} FROM {tableName} WHERE id=@id";
+            command.Parameters.AddWithValue("@id", id);
+
+            var item = new DropshipItemModel();
+
+            await db.CommandReaderAsync(command, reader =>
+            {
+                item = new DropshipItemModel();
+                LoadModel(reader, item);
+            });
+
+            return item;
+        }
+
         public async Task<int> CountItems()
         {
             var command = new NpgsqlCommand();

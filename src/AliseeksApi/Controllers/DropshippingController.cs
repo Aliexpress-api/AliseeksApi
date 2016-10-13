@@ -119,6 +119,28 @@ namespace AliseeksApi.Controllers
         }
 
         [HttpGet]
+        [Route("/api/[controller]/{itemid}")]
+        public async Task<IActionResult> GetItem(int itemid)
+        {
+            var username = HttpContext.User.Identity.Name;
+
+            var item = await dbItems.GetOneByID(itemid);
+
+            if(item.Username != username)
+                return NotFound("No item was found");
+
+            var shopifyItems = await shopify.GetProductsByID(username, new string[] { item.ListingID });
+
+            var dropshipItem = new DropshipItem()
+            {
+                Dropshipping = item,
+                Product = shopifyItems.FirstOrDefault()
+            };
+
+            return Json(dropshipItem);
+        }
+
+        [HttpGet]
         [Route("/api/[controller]/overview")]
         public async Task<IActionResult> GetOverview()
         {
