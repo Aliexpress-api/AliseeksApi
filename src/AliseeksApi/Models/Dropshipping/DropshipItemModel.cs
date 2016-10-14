@@ -16,14 +16,14 @@ namespace AliseeksApi.Models.Dropshipping
         [DataColumn("username")]
         public string Username { get; set; }
 
+        [DataColumn("oauthid")]
+        public int OAuthID { get; set; } //FK to OAuthModel
+
         [DataColumn("source", DbType = NpgsqlTypes.NpgsqlDbType.Jsonb)]
         public SingleItemRequest Source { get; set; }
 
         [DataColumn("listingid")]
         public string ListingID { get; set; }
-
-        [DataColumn("listing")]
-        public string Listing { get; set; }
 
         [DataColumn("image")]
         public string Image { get; set; }

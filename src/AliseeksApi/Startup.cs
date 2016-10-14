@@ -28,6 +28,7 @@ using AliseeksApi.Storage.Postgres.Logging;
 using AliseeksApi.Services.Search;
 using AliseeksApi.Services.Dropshipping;
 using AliseeksApi.Services.Dropshipping.Shopify;
+using AliseeksApi.Services.OAuth;
 using AliseeksApi.Storage.Postgres.Dropshipping;
 using AliseeksApi.Storage.Postgres.OAuth;
 using Microsoft.AspNetCore.Http;
@@ -157,6 +158,7 @@ namespace AliseeksApi
             services.AddTransient<DropshippingService>();
             services.AddTransient<ShopifyService>();
             services.AddTransient<ShopifyOAuth>();
+            services.AddTransient<OAuthService>();
 
             services.AddTransient<WebSearchService[]>((provider) =>
             {

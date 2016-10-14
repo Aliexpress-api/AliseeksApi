@@ -16,6 +16,9 @@ namespace AliseeksApi.Models.OAuth
         [DataColumn("username")]
         public string Username { get; set; }
 
+        [DataColumn("acocuntid")]
+        public int AccountID { get; set; } //FK to DropshipAccount
+
         [DataColumn("access_token")]
         public string AccessToken { get; set; }
 
@@ -29,7 +32,7 @@ namespace AliseeksApi.Models.OAuth
         public Dictionary<string, string> Extra { get; set; } = new Dictionary<string, string>();
     }
 
-    public class OAuthShopifyModel : OAuthAccountModel
+    public class OAuthShopifyModel : OAuthAccountModel, IOAuthModel
     {
         [JsonIgnore]
         public string Shop
@@ -42,5 +45,15 @@ namespace AliseeksApi.Models.OAuth
                 throw new Exception("OAuth Model not a valid model");
             }
         }
+
+        public string GetServiceName()
+        {
+            return "Shopify";
+        }
+    }
+
+    public interface IOAuthModel
+    {
+        string GetServiceName();
     }
 }

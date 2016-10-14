@@ -86,12 +86,8 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
                 return false;            
         }
 
-        public async Task<ShopifyProductModel> AddProduct(string username, ShopifyProductModel product)
+        public async Task<ShopifyProductModel> AddProduct(string username, ShopifyProductModel product, OAuthShopifyModel creds)
         {
-            var creds = await GetCredentials(username);
-            if (creds == null)
-                return new ShopifyProductModel(); //Not integrated into shopify
-
             string endpoint = ShopifyEndpoints.BaseEndpoint(creds.Shop, ShopifyEndpoints.Products);
 
             var requestType = new

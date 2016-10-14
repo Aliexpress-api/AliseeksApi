@@ -19,6 +19,7 @@ using AliseeksApi.Utility.Extensions;
 using AliseeksApi.Models.Dropshipping.Orders;
 using AliseeksApi.Storage.Postgres.OAuth;
 using AliseeksApi.Models.OAuth;
+using AliseeksApi.Services.OAuth;
 
 namespace AliseeksApi.Services.Dropshipping
 {
@@ -29,10 +30,10 @@ namespace AliseeksApi.Services.Dropshipping
         private readonly DropshipItemsPostgres dbItems;
         private readonly DropshipAccountsPostgres dbAccounts;
         private readonly IApplicationCache cache;
-        private readonly OAuthPostgres dbOAuth;
+        private readonly OAuthService oauthdb;
 
         public DropshippingService(ShopifyService shopify, ISearchService search,
-            OAuthPostgres dbOauth, DropshipItemsPostgres dbItems, DropshipAccountsPostgres dbAccounts, IApplicationCache cache)
+            OAuthService oauthdb, DropshipItemsPostgres dbItems, DropshipAccountsPostgres dbAccounts, IApplicationCache cache)
         {
             this.shopify = shopify;
             this.search = search;
@@ -208,14 +209,20 @@ namespace AliseeksApi.Services.Dropshipping
         {
             var detail = await search.ItemSearch(item);
 
+            //Get integration access tokens
+            var oauth = await oauthdb.RetrieveOAuth<OAuthShopifyModel>(username);
+            if (oauth == null)
+                return;
+
+            //Create the dropship item and model
             var dropshipItem = new DropshipItem()
             {
                 Dropshipping = new DropshipItemModel()
                 {
-                    Listing = "Shopify",
                     Source = item,
                     Username = item.Username,
-                    Rules = DropshipListingRules.Default
+                    Rules = DropshipListingRules.Default,
+                    OAuthID = oauth.ID
                 },
                 Product = new ShopifyProductModel()
                 {
@@ -234,7 +241,8 @@ namespace AliseeksApi.Services.Dropshipping
                     }
                 }
             };
-
+            
+            //Add images from shopify
             var images = new List<ShopifyImageType>();
             foreach(var image in detail.ImageUrls)
             {
@@ -244,14 +252,17 @@ namespace AliseeksApi.Services.Dropshipping
                 });
             }
 
+            //Set the first image to the main dropship model image
             if (images.Count > 0)
                 dropshipItem.Dropshipping.Image = images[0].Src;
 
             dropshipItem.Product.Images = images.ToArray();
 
+            //Apply dropshipping rules
             dropshipItem.Dropshipping.Rules.ApplyRules(detail, dropshipItem.Product);
 
-            var product = await shopify.AddProduct(username, dropshipItem.Product);
+            //Add pro
+            var product = await shopify.AddProduct(username, dropshipItem.Product, oauth);
 
             dropshipItem.Dropshipping.ListingID = product.ID;
 
@@ -291,7 +302,7 @@ namespace AliseeksApi.Services.Dropshipping
 
         public async Task<DropshipIntegration[]> GetIntegrations(string username)
         {
-            var items = await dbOAuth.GetMultipleByUsername(username);
+            var items = await oauthdb.RetrieveMultiple(username);
             var integrations = new List<DropshipIntegration>();
 
             var shopifyIntegration = items.FirstOrDefault(x => x.Service == "Shopify");
@@ -302,6 +313,7 @@ namespace AliseeksApi.Services.Dropshipping
 
                 integrations.Add(new DropshipIntegration()
                 {
+                    ID = shopifyTyped.ID,
                     Service = "Shopify",
                     AccountInfo = shopifyTyped.Shop
                 });

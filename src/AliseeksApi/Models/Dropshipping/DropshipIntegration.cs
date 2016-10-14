@@ -7,6 +7,7 @@ namespace AliseeksApi.Models.Dropshipping
 {
     public class DropshipIntegration
     {
+        public int ID { get; set; }
         public string Service { get; set; }
         public string AccountInfo { get; set; }
     }
