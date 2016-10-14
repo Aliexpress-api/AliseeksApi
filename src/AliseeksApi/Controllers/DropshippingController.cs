@@ -16,6 +16,7 @@ using AliseeksApi.Services.Dropshipping.Shopify;
 using AliseeksApi.Models.Shopify;
 using AliseeksApi.Storage.Postgres.OAuth;
 using AliseeksApi.Storage.Postgres.Dropshipping;
+using AliseeksApi.Services.Search;
 
 // For more information on enabling MVC for empty projects, visit http://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -31,9 +32,10 @@ namespace AliseeksApi.Controllers
         private readonly OAuthPostgres dbOAuth;
         private readonly DropshipItemsPostgres dbItems;
         private readonly DropshipAccountsPostgres dbAccounts;
+        private readonly ISearchService search;
 
 
-        public DropshippingController(DropshippingService dropship, ShopifyService shopify,
+        public DropshippingController(DropshippingService dropship, ISearchService search, ShopifyService shopify,
             OAuthPostgres dbOauth, DropshipItemsPostgres dbItems, DropshipAccountsPostgres dbAccounts, IRavenClient raven)
         {
             this.dropship = dropship;
@@ -42,6 +44,7 @@ namespace AliseeksApi.Controllers
             this.dbOAuth = dbOauth;
             this.dbItems = dbItems;
             this.dbAccounts = dbAccounts;
+            this.search = search;
         }
 
         // GET: /<controller>/
@@ -68,12 +71,25 @@ namespace AliseeksApi.Controllers
         [Route("/api/[controller]/update")]
         public async Task<IActionResult> Update([FromBody]DropshipItemModel model)
         {
-            if (HttpContext.User.Identity.IsAuthenticated)
-                model.Username = HttpContext.User.Identity.Name;
-            else
-                model.Username = "Guest";
+            var username = HttpContext.User.Identity.Name;
 
-            await dropship.Update(model);
+            var sourceItem = await search.ItemSearch(model.Source);
+
+            if (sourceItem == null)
+                return NotFound("Aliexpress source is incorrect");
+
+            var shopifyProducts = await shopify.GetProductsByID(username, new string[] { model.ListingID });
+            var product = shopifyProducts.FirstOrDefault();
+
+            if (product == null)
+                return NotFound("Shopify listing is incorrect");
+
+            model.Rules.ApplyRules(sourceItem, product);
+
+            var updatedProduct = await shopify.UpdateProduct(username, product);
+
+            if (product == null)
+                return NotFound("Shopify information is incorrect");
 
             return Ok();
         }
@@ -138,6 +154,27 @@ namespace AliseeksApi.Controllers
             };
 
             return Json(dropshipItem);
+        }
+
+        [HttpGet]
+        [Route("/api/[controller]/integrations/{source}/{itemid}")]
+        public async Task<IActionResult> GetListingItem(string source, string itemid)
+        {
+            var username = HttpContext.User.Identity.Name;
+
+            var oauths = await dbOAuth.GetMultipleByUsername(username);
+
+            var oauth = oauths.FirstOrDefault(x => x.Service == source);
+            if (oauth == null)
+                return NotFound();
+
+            var shopifyItems = await shopify.GetProductsByID(username, new string[] { itemid });
+            var shopifyItem = shopifyItems.FirstOrDefault(x => x.ID == itemid);
+
+            if (shopifyItem == null)
+                return NotFound();
+
+            return Json(shopifyItem);
         }
 
         [HttpGet]

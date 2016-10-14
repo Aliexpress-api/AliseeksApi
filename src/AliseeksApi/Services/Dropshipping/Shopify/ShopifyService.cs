@@ -201,7 +201,7 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
                 return ret;
             }
             else
-                return new ShopifyProductModel();
+                return null;
         }
 
         public async Task<ShopifyOrder[]> GetOrders(string username)
