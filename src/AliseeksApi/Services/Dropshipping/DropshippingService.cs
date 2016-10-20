@@ -261,7 +261,7 @@ namespace AliseeksApi.Services.Dropshipping
             //Apply dropshipping rules
             dropshipItem.Dropshipping.Rules.ApplyRules(detail, dropshipItem.Product);
 
-            //Add pro
+            //Add product
             var product = await shopify.AddProduct(username, dropshipItem.Product, oauth);
 
             dropshipItem.Dropshipping.ListingID = product.ID;
@@ -269,7 +269,7 @@ namespace AliseeksApi.Services.Dropshipping
             await dbItems.Save(dropshipItem.Dropshipping);
         }
 
-        public async Task AddProduct(string username, DropshipItemModel model)
+     /*   public async Task AddProduct(string username, DropshipItemModel model)
         {
             if (model.Source.Link.EmptyOrNull())
                 return;
@@ -283,12 +283,12 @@ namespace AliseeksApi.Services.Dropshipping
                 default:
                     throw new Exception("Invalid DropshipItemModel Source");
             }
-        }
+        } */
 
-        public async Task UpdateProduct(string username, DropshipItem item)
+ /*       public async Task UpdateProduct(string username, DropshipItem item)
         {
             await shopify.UpdateProduct(username, item.Product);
-        }
+        } */
 
         public async Task SyncProduct(string username, DropshipItem item)
         {
