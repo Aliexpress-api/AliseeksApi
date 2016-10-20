@@ -78,6 +78,8 @@ namespace AliseeksApi.Controllers
 
             //Get integration information
             var oauth = await oauthdb.RetrieveOAuth<OAuthShopifyModel>(username);
+            if (oauth == null)
+                return NotFound("Integration not configured properly");
 
             //Get aliexpress item details
             var sourceItem = await search.ItemSearch(model.Source);
@@ -120,6 +122,9 @@ namespace AliseeksApi.Controllers
             //Retrieve Dropship Item Models from db
             var items = await dbItems.GetMultipleByUsername(username);
 
+            //Get integration oauth info
+            var oauth = await oauthdb.RetrieveOAuth<OAuthShopifyModel>(username);
+
             //Add to return object
             items.ForEach(item => dropshipItems.Add(new DropshipItem()
             {
@@ -136,7 +141,7 @@ namespace AliseeksApi.Controllers
                 var ids = new List<string>();
                 items.ForEach(item => ids.Add(item.ListingID));
 
-                var shopifyItems = await shopify.GetProductsByID(username, ids.ToArray());
+                var shopifyItems = await shopify.GetProductsByID(username, ids.ToArray(), oauth);
                 shopifyItems.ForEach(shopifyItem =>
                 {
                     var item = dropshipItems.FirstOrDefault(dropshipItem => dropshipItem.Dropshipping.ListingID == shopifyItem.ID);
@@ -158,12 +163,14 @@ namespace AliseeksApi.Controllers
         {
             var username = HttpContext.User.Identity.Name;
 
+            var oauth = await oauthdb.RetrieveOAuth<OAuthShopifyModel>(username);
+
             var item = await dbItems.GetOneByID(itemid);
 
             if(item.Username != username)
                 return NotFound("No item was found");
 
-            var shopifyItems = await shopify.GetProductsByID(username, new string[] { item.ListingID });
+            var shopifyItems = await shopify.GetProductsByID(username, new string[] { item.ListingID }, oauth);
 
             var dropshipItem = new DropshipItem()
             {

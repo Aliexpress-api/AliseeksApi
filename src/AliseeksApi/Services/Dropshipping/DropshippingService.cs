@@ -269,7 +269,8 @@ namespace AliseeksApi.Services.Dropshipping
             await dbItems.Save(dropshipItem.Dropshipping);
         }
 
-     /*   public async Task AddProduct(string username, DropshipItemModel model)
+        //Obsolete version of this method
+  /*      public async Task AddProduct(string username, DropshipItemModel model)
         {
             if (model.Source.Link.EmptyOrNull())
                 return;
@@ -283,9 +284,13 @@ namespace AliseeksApi.Services.Dropshipping
                 default:
                     throw new Exception("Invalid DropshipItemModel Source");
             }
-        } */
+        }
+        */
 
- /*       public async Task UpdateProduct(string username, DropshipItem item)
+        //Obsolete method, this is now done in the DropshippingController
+
+            /*
+        public async Task UpdateProduct(string username, DropshipItem item)
         {
             await shopify.UpdateProduct(username, item.Product);
         } */

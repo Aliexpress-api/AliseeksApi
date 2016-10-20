@@ -18,6 +18,7 @@ using AliseeksApi.Utility;
 using AliseeksApi.Storage.Postgres.OAuth;
 using AliseeksApi.Models.OAuth;
 using AliseeksApi.Storage.Cache;
+using AliseeksApi.Services.OAuth;
 
 namespace AliseeksApi.Services.Dropshipping.Shopify
 {
@@ -29,6 +30,10 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
         private readonly OAuthPostgres oauthDb;
         private readonly ShopifyOAuth oauth;
         private readonly IApplicationCache cache;
+        private readonly OAuthService oauthRetriever;
+
+        //Populated by SetupScope function, contains shopify credentials
+        private OAuthShopifyModel creds { get; set; }
 
         JsonSerializerSettings jsonSettings = new JsonSerializerSettings()
         {
@@ -36,14 +41,21 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
             DefaultValueHandling = DefaultValueHandling.Ignore
         };
 
+        //Setup this class as a Scoped dependency injection and call SetupScope
         public ShopifyService(IHttpService http, IApplicationCache cache,
-            ShopifyOAuth oauth, OAuthPostgres oauthDb, IRavenClient raven, IOptions<ShopifyOptions> config)
+            ShopifyOAuth oauth, OAuthPostgres oauthDb, OAuthService oauthRetriever, IRavenClient raven, IOptions<ShopifyOptions> config)
         {
             this.http = http;
             this.raven = raven;
             this.config = config.Value;
             this.oauthDb = oauthDb;
             this.cache = cache;
+            this.oauthRetriever = oauthRetriever;
+        }
+
+        public async Task SetupScope(string username)
+        {
+            creds = await oauthRetriever.RetrieveOAuth<OAuthShopifyModel>(username);
         }
 
         public async Task<bool> AddShopifyIntegration(string username, ShopifyOAuthResponse oauth, ShopifyOAuth verify)
@@ -141,12 +153,8 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
             return new ShopifyProductModel[0];       
         }
 
-        public async Task<ShopifyProductModel[]> GetProductsByID(string username, string[] ids)
+        public async Task<ShopifyProductModel[]> GetProductsByID(string username, string[] ids, OAuthShopifyModel creds)
         {
-            var creds = await GetCredentials(username);
-            if (creds == null)
-                return new ShopifyProductModel[0]; //Not integrated into shopify
-
             string endpoint = ShopifyEndpoints.BaseEndpoint(creds.Shop, ShopifyEndpoints.Products) + $"?ids={String.Join(",", ids)}";
 
             var response = await http.Get(endpoint, (client) =>

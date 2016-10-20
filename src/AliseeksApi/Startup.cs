@@ -156,7 +156,18 @@ namespace AliseeksApi
             services.AddTransient<IUserService, UserService>();
             services.AddTransient<ILoggingService, LoggingService>();
             services.AddTransient<DropshippingService>();
-            services.AddTransient<ShopifyService>();
+            services.AddScoped<ShopifyService>(async (s) =>
+            {
+                var context = s.GetRequiredService<IHttpContextAccessor>().HttpContext;
+                var username = context.User.Identity.Name;
+
+                var shopify = new ShopifyService(s.GetRequiredService<IHttpService>, s.GetRequiredService<IApplicationCache>, s.GetRequiredService<ShopifyOAuth>, s.GetRequiredService<OAuthPostgres>,
+                    s.GetRequiredService<OAuthService>, s.GetRequiredService<IRavenClient>, s.GetRequiredService<IOptions<ShopifyOptions>>);
+
+                await shopify.SetupScope(username);
+
+                return shopify;
+            });
             services.AddTransient<ShopifyOAuth>();
             services.AddTransient<OAuthService>();
 
