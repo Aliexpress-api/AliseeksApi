@@ -42,6 +42,7 @@ namespace AliseeksApi.Services.Dropshipping
             this.dbAccounts = dbAccounts;
             this.cache = cache;
             this.dbOAuth = dbOauth;
+            this.oauthdb = oauthdb; 
         }
 
         public async Task<DropshipAccount> SetupAccount(DropshipAccountConfiguration account, string username)
