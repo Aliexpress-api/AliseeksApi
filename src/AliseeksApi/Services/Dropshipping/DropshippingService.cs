@@ -31,8 +31,9 @@ namespace AliseeksApi.Services.Dropshipping
         private readonly DropshipAccountsPostgres dbAccounts;
         private readonly IApplicationCache cache;
         private readonly OAuthService oauthdb;
+        private readonly OAuthPostgres dbOAuth;
 
-        public DropshippingService(ShopifyService shopify, ISearchService search,
+        public DropshippingService(ShopifyService shopify, ISearchService search, OAuthPostgres dbOauth,
             OAuthService oauthdb, DropshipItemsPostgres dbItems, DropshipAccountsPostgres dbAccounts, IApplicationCache cache)
         {
             this.shopify = shopify;
@@ -109,6 +110,10 @@ namespace AliseeksApi.Services.Dropshipping
         {
             var dropshipItems = new List<DropshipItem>();
 
+            var oauth = await oauthdb.RetrieveOAuth<OAuthShopifyModel>(username);
+            if (oauth == null)
+                return new DropshipItem[0];
+
             var items = await dbItems.GetMultipleByUsername(username);
 
             if (items.Length == 0)
@@ -120,7 +125,7 @@ namespace AliseeksApi.Services.Dropshipping
                 ids.Add(item.ListingID);
             }
 
-            var shopifyItems = await shopify.GetProductsByID(username, ids.ToArray());
+            var shopifyItems = await shopify.GetProductsByID(username, ids.ToArray(), oauth);
 
             foreach(var shopifyItem in shopifyItems)
             {
@@ -139,13 +144,17 @@ namespace AliseeksApi.Services.Dropshipping
         {
             var dropshipItems = new List<DropshipItem>();
 
+            var oauth = await oauthdb.RetrieveOAuth<OAuthShopifyModel>(username);
+            if (oauth == null)
+                return new DropshipItem[0];
+
             var ids = new List<string>();
             foreach (var item in items)
             {
                 ids.Add(item.ListingID);
             }
 
-            var shopifyItems = await shopify.GetProductsByID(username, ids.ToArray());
+            var shopifyItems = await shopify.GetProductsByID(username, ids.ToArray(), oauth);
 
             foreach (var shopifyItem in shopifyItems)
             {
@@ -301,8 +310,10 @@ namespace AliseeksApi.Services.Dropshipping
 
             var rules = item.Dropshipping.Rules ?? DropshipListingRules.Default;
 
-            if(rules.ApplyRules(sourceItem, item.Product))
-                await UpdateProduct(username, item);
+            var creds = await oauthdb.RetrieveOAuth<OAuthShopifyModel>(username);
+
+            if(rules.ApplyRules(sourceItem, item.Product) && creds != null)
+                await shopify.UpdateProduct(username, item.Product, creds);
         }
 
         public async Task<DropshipIntegration[]> GetIntegrations(string username)

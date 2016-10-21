@@ -88,7 +88,7 @@ namespace AliseeksApi.Controllers
                 return NotFound("Aliexpress source is incorrect");
 
             //Get shpoify item details
-            var shopifyProducts = await shopify.GetProductsByID(username, new string[] { model.ListingID });
+            var shopifyProducts = await shopify.GetProductsByID(username, new string[] { model.ListingID }, oauth);
 
             var product = shopifyProducts.FirstOrDefault();
 
@@ -181,20 +181,19 @@ namespace AliseeksApi.Controllers
             return Json(dropshipItem);
         }
 
-        //Get listing item by Integration Name and ItemID
+        //Obsolete method
+ /*       //Get listing item by Integration Name and ItemID
         [HttpGet]
         [Route("/api/[controller]/integrations/{source}/{itemid}")]
         public async Task<IActionResult> GetListingItem(string source, string itemid)
         {
             var username = HttpContext.User.Identity.Name;
 
-            var oauths = await dbOAuth.GetMultipleByUsername(username);
-
-            var oauth = oauths.FirstOrDefault(x => x.Service == source);
+            var oauth = await oauthdb.RetrieveOAuth<OAuthShopifyModel>(username);
             if (oauth == null)
                 return NotFound();
 
-            var shopifyItems = await shopify.GetProductsByID(username, new string[] { itemid });
+            var shopifyItems = await shopify.GetProductsByID(username, new string[] { itemid }, oauth);
             var shopifyItem = shopifyItems.FirstOrDefault(x => x.ID == itemid);
 
             if (shopifyItem == null)
@@ -202,7 +201,7 @@ namespace AliseeksApi.Controllers
 
             return Json(shopifyItem);
         }
-
+*/
         //Get Account Overview
         [HttpGet]
         [Route("/api/[controller]/overview")]
@@ -294,7 +293,9 @@ namespace AliseeksApi.Controllers
             if (HttpContext.User.Identity.IsAuthenticated)
                 username = HttpContext.User.Identity.Name;
 
-            if (!await shopify.AddShopifyIntegration(username, response, oauth))
+            var account = await dbAccounts.GetOneByUsername(username);
+
+            if (!await shopify.AddShopifyIntegration(account, response, oauth))
                 return NotFound();
 
             return Ok();
@@ -317,7 +318,7 @@ namespace AliseeksApi.Controllers
 
         //Delete Integration
         [HttpDelete]
-        [Route("/api/[controller]account/integrations/{id}")]
+        [Route("/api/[controller]/account/integrations/{id}")]
         public async Task<IActionResult> DeleteIntegration(int id, [FromServices]OAuthPostgres oauthdb)
         {
             var username = HttpContext.User.Identity.Name;

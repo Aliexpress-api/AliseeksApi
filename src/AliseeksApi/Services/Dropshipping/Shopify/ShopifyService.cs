@@ -19,6 +19,8 @@ using AliseeksApi.Storage.Postgres.OAuth;
 using AliseeksApi.Models.OAuth;
 using AliseeksApi.Storage.Cache;
 using AliseeksApi.Services.OAuth;
+using Microsoft.AspNetCore.Http;
+using AliseeksApi.Models.Dropshipping;
 
 namespace AliseeksApi.Services.Dropshipping.Shopify
 {
@@ -53,13 +55,10 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
             this.oauthRetriever = oauthRetriever;
         }
 
-        public async Task SetupScope(string username)
+        public async Task<bool> AddShopifyIntegration(DropshipAccount account, ShopifyOAuthResponse oauth, ShopifyOAuth verify)
         {
-            creds = await oauthRetriever.RetrieveOAuth<OAuthShopifyModel>(username);
-        }
+            var username = account.Username;
 
-        public async Task<bool> AddShopifyIntegration(string username, ShopifyOAuthResponse oauth, ShopifyOAuth verify)
-        {
             var endpoint = ShopifyEndpoints.OAuthEndpoint(oauth.Shop);
 
             var requestType = new
@@ -89,7 +88,8 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
                     Extra = new Dictionary<string, string>()
                     {
                         { "Shop", oauth.Shop }
-                    }
+                    },
+                    AccountID = account.ID
                 });
 
                 return true;
