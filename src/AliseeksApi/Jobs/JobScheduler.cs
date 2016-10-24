@@ -12,7 +12,7 @@ namespace AliseeksApi.Jobs
 {
     public static class JobScheduler
     {
-        public static bool RunJobs = false;
+        public static bool RunJobs = true;
 
         public static void ScheduleJobs()
         {
