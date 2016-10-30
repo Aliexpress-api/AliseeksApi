@@ -14,5 +14,6 @@ namespace AliseeksApi.Services.Search
         Task<SavedSearchModel> SaveSearch(SavedSearchModel model);
         Task<ItemPriceHistoryModel[]> GetPriceHistories(PriceHistoryRequestModel[] models);
         Task<ItemDetail> ItemSearch(SingleItemRequest model);
+        Task DeleteSearch(int id, string username);
     }
 }

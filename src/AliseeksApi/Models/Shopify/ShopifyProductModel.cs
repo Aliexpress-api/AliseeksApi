@@ -20,6 +20,8 @@ namespace AliseeksApi.Models.Shopify
         public string ProductType { get; set; }
         public ShopifyImageType[] Images { get; set; }
 
+        public string Link { get; set; }
+
         public List<ShopifyVarant> Variants { get; set; } = new List<ShopifyVarant>();
     }
 

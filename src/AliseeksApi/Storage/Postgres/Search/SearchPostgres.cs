@@ -19,7 +19,9 @@ namespace AliseeksApi.Storage.Postgres.Search
         const string searchCacheInsertColumns = @"searchid, itemid, currency, link, title, price, quantity, shippingprice, unit, lotprice, freeshipping, imageurl, mobileonly, storename, toprateseller, feedback, orders, source";
         const string searchCacheTable = "searchcache";
         const string searchCacheSelectColumns = @"itemid, currency, link, title, price, quantity, shippingprice, unit, lotprice, freeshipping, imageurl, mobileonly, storename, toprateseller, feedback, orders, source";
+
         const string searchSaveInsertColumns = @"username, criteria";
+        const string searchSaveSelectColumns = "id, username, criteria, created";
         const string searchSaveTable = "savesearch";
 
         const string itemPriceHistorySelectColumns = "id, itemid, source, title, history";
@@ -252,6 +254,56 @@ namespace AliseeksApi.Storage.Postgres.Search
             });
 
             return savedSearches.ToArray();
+        }
+
+        public async Task<int> CountSavedSearchs(string username)
+        {
+            var command = new NpgsqlCommand();
+            command.CommandText = $"SELECT COUNT(id) FROM {searchSaveTable} WHERE username=@username";
+            command.Parameters.AddWithValue("username", username);
+
+            var count = 0;
+
+            await db.CommandReaderAsync(command, reader =>
+            {
+                count = reader.GetInt32(0);
+            });
+
+            return count;
+        }
+
+        public async Task<SavedSearchModel[]> SelectSaveSearches(string username)
+        {
+            var command = new NpgsqlCommand();
+            command.CommandText = $"SELECT {searchSaveSelectColumns} FROM {searchSaveTable} WHERE username=@username";
+            command.Parameters.AddWithValue("username", username);
+
+            var saves = new List<SavedSearchModel>();
+
+            await db.CommandReaderAsync(command, reader =>
+            {
+                var ord = 0;
+
+                var save = new SavedSearchModel();
+                save.ID = reader.GetInt32(ord++);
+                save.Username = reader.GetString(ord++);
+                save.Criteria = JsonConvert.DeserializeObject<SearchCriteria>(reader.GetString(ord++));
+                save.Created = reader.GetDateTime(ord++);
+
+                saves.Add(save);
+            });
+
+            return saves.ToArray();
+        }
+
+        public async Task DeleteSavedSearch(string username, int id)
+        {
+            var command = new NpgsqlCommand();
+            command.CommandText = $"DELETE FROM {searchSaveTable} WHERE username=@username AND id=@id";
+            command.Parameters.AddWithValue("username", username);
+            command.Parameters.AddWithValue("id", id);
+
+            await db.CommandNonqueryAsync(command);
         }
     }
 }

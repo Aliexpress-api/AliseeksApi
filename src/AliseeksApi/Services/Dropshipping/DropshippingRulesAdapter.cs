@@ -48,7 +48,7 @@ namespace AliseeksApi.Services.Dropshipping
                     break;
 
                 case PriceRule.PricePercentage:
-                    adjusted = actualPrice * rules.Price / 100; //Convert to percentage
+                    adjusted = actualPrice * (1.00m + rules.Price / 100); //Convert to percentage
                     break;
 
                 default:

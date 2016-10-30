@@ -6,6 +6,7 @@ using AliseeksApi.Storage.Postgres.ORM;
 using AliseeksApi.Models.OAuth;
 using AliseeksApi.Utility;
 using Npgsql;
+using Newtonsoft.Json;
 
 namespace AliseeksApi.Storage.Postgres.OAuth
 {
@@ -14,6 +15,20 @@ namespace AliseeksApi.Storage.Postgres.OAuth
         public OAuthPostgres(IPostgresDb db) : base(db)
         {
 
+        }
+
+        public async Task CreateOAuth(OAuthAccountModel model)
+        {
+            var command = new NpgsqlCommand();
+            command.CommandText = $"INSERT INTO {tableName} (username, access_token, meta, extra, accountid, service) VALUES (@username, @access_token, @meta, @extra, @accountid, @service);";
+            command.Parameters.AddWithValue("@username", model.Username);
+            command.Parameters.AddWithValue("@access_token", model.AccessToken);
+            command.Parameters.AddWithValue("@meta", NpgsqlTypes.NpgsqlDbType.Jsonb, JsonConvert.SerializeObject(model.Meta));
+            command.Parameters.AddWithValue("@extra", NpgsqlTypes.NpgsqlDbType.Jsonb, JsonConvert.SerializeObject(model.Extra));
+            command.Parameters.AddWithValue("@accountid", model.AccountID);
+            command.Parameters.AddWithValue("@service", model.Service);
+
+            await db.CommandNonqueryAsync(command);
         }
 
         public async Task<OAuthAccountModel[]> GetMultipleByUsername(string username)
@@ -32,6 +47,16 @@ namespace AliseeksApi.Storage.Postgres.OAuth
             });
 
             return items.ToArray();
+        }
+
+        public async Task DeleteByID(int id, string username)
+        {
+            var command = new NpgsqlCommand();
+            command.CommandText = $"DELETE FROM {tableName} WHERE id=@id AND username=@username";
+            command.Parameters.AddWithValue("@id", id);
+            command.Parameters.AddWithValue("@username", username);
+
+            await db.CommandNonqueryAsync(command);
         }
     }
 }

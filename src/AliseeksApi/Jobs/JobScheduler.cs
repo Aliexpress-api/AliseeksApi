@@ -20,7 +20,9 @@ namespace AliseeksApi.Jobs
 
             if(!RunJobs) { return; }
 
-            BackgroundJob.Enqueue<DropshippingJobs>(x => x.RunUpdateItems(0));
+            //BackgroundJob.Enqueue<DropshippingJobs>(x => x.RunUpdateItems(0));
+
+            BackgroundJob.Schedule<DropshippingJobs>(x => x.RunUpdateItems(0), TimeSpan.FromDays(1));
 
             //RecurringJob.AddOrUpdate<PriceHistoryJob>("pricehistory", x => x.RunJob(), Cron.MinuteInterval(5));
             //RecurringJob.Trigger("pricehistory");

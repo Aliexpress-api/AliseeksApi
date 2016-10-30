@@ -6,6 +6,7 @@ using AliseeksApi.Models.Dropshipping;
 using AliseeksApi.Storage.Postgres.ORM;
 using AliseeksApi.Utility;
 using Npgsql;
+using Newtonsoft.Json;
 
 namespace AliseeksApi.Storage.Postgres.Dropshipping
 {
@@ -13,6 +14,17 @@ namespace AliseeksApi.Storage.Postgres.Dropshipping
     {
         public DropshipAccountsPostgres(IPostgresDb db) : base(db)
         {
+        }
+
+        public async Task CreateAccount(DropshipAccount account)
+        {
+            var command = new NpgsqlCommand();
+            command.CommandText = $"INSERT INTO {tableName} (username, account, subscription) VALUES (@username, @account, @subscription);";
+            command.Parameters.AddWithValue("@username", account.Username);
+            command.Parameters.AddWithValue("@account", NpgsqlTypes.NpgsqlDbType.Jsonb, JsonConvert.SerializeObject(account.Account));
+            command.Parameters.AddWithValue("@subscription", account.Subscription);
+
+            await db.CommandNonqueryAsync(command);
         }
 
         public async Task<DropshipAccount> GetOneByUsername(string username)

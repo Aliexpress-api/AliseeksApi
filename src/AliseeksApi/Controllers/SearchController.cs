@@ -77,9 +77,21 @@ namespace AliseeksApi.Controllers
             };
 
             if (HttpContext.User.Identity.IsAuthenticated)
-                model.Username = HttpContext.User.FindFirst(ClaimTypes.Name).Value;
+                model.Username = HttpContext.User.Identity.Name;
 
             this.search.SaveSearch(model);
+
+            return Ok();
+        }
+
+        [HttpDelete]
+        [Authorize]
+        [Route("/api/[controller]/save/{id}")]
+        public async Task<IActionResult> DeleteSearch(int id)
+        {
+            var username = HttpContext.User.Identity.Name;
+
+            await search.DeleteSearch(id, username);
 
             return Ok();
         }

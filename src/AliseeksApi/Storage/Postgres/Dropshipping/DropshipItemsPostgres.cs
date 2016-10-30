@@ -18,6 +18,20 @@ namespace AliseeksApi.Storage.Postgres.Dropshipping
 
         }
 
+        public async Task InsertItem(DropshipItemModel model)
+        {
+            var command = new NpgsqlCommand();
+            command.CommandText = $"INSERT INTO {tableName} (username, source, listingid, rules, image, oauthid) VALUES (@username, @source, @listingid, @rules, @image, @oauthid);";
+            command.Parameters.AddWithValue("@username", model.Username);
+            command.Parameters.AddWithValue("@source", NpgsqlTypes.NpgsqlDbType.Jsonb, JsonConvert.SerializeObject(model.Source));
+            command.Parameters.AddWithValue("@listingid", model.ListingID);
+            command.Parameters.AddWithValue("@rules", NpgsqlTypes.NpgsqlDbType.Jsonb, JsonConvert.SerializeObject(model.Rules));
+            command.Parameters.AddWithValue("@image", model.Image);
+            command.Parameters.AddWithValue("@oauthid", model.OAuthID);
+
+            await db.CommandNonqueryAsync(command);
+        }
+
         public async Task<DropshipItemModel[]> GetMultipleByUsername(string username)
         {
             var command = new NpgsqlCommand();

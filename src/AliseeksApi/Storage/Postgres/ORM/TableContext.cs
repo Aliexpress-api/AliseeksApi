@@ -67,7 +67,7 @@ namespace AliseeksApi.Storage.Postgres.ORM
         public async Task Save(T model)
         {
             var command = new NpgsqlCommand();
-            command.CommandText = $"INSERT INTO {tableName} ({String.Join(",",InsertColumns(null))}) VALUES ({String.Join(",",InsertValues(model))}) ON CONFLICT (id) DO UPDATE SET {String.Join(",",UpdateSet(model, command))};";
+            command.CommandText = $"INSERT INTO {tableName} ({String.Join(",",InsertColumns(null))}) VALUES ({String.Join(",",InsertValues(model))});";
 
             await db.CommandNonqueryAsync(command);
         }

@@ -19,5 +19,8 @@ namespace AliseeksApi.Storage.Postgres.Search
         Task<ItemModel> PullTopItemHistoryAsync();
         Task DeleteItemHistoryByItemIDAsync(ItemModel item);
         Task<ItemPriceHistoryModel[]> SelectItemPriceHistoriesAsync(PriceHistoryRequestModel[] models);
+        Task<int> CountSavedSearchs(string username);
+        Task<SavedSearchModel[]> SelectSaveSearches(string username);
+        Task DeleteSavedSearch(string username, int id);
     }
 }

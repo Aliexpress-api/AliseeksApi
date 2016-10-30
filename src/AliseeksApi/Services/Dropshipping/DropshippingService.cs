@@ -54,7 +54,7 @@ namespace AliseeksApi.Services.Dropshipping
                 Subscription = account.Subscription
             };
 
-            await dbAccounts.Save(dropshipAccount);
+            await dbAccounts.CreateAccount(dropshipAccount);
 
             return dropshipAccount;
         }

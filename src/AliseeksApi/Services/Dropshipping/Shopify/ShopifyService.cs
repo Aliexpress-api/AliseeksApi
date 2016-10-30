@@ -80,7 +80,7 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
                 var tokenResponse = JsonConvert.DeserializeObject<ShopifyOAuthAccessResponse>(message, jsonSettings);
                 verify.VerifyScope(tokenResponse.Scope);
 
-                await oauthDb.Save(new OAuthAccountModel()
+                await oauthDb.CreateOAuth(new OAuthAccountModel()
                 {
                     AccessToken = tokenResponse.AccessToken,
                     Username = username,
@@ -168,6 +168,12 @@ namespace AliseeksApi.Services.Dropshipping.Shopify
             {
                 var productResponse = JObject.Parse(message).SelectToken("products").ToString();
                 var ret = JsonConvert.DeserializeObject<ShopifyProductModel[]>(productResponse, jsonSettings);
+
+                foreach(var item in ret)
+                {
+                    item.Link = $"https://{creds.Shop}/admin/products/{item.ID}";
+                }
+
                 return ret;
             }
 

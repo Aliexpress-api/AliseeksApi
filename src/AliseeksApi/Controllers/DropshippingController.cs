@@ -126,7 +126,7 @@ namespace AliseeksApi.Controllers
 
             dropshipItem.Dropshipping.ListingID = product.ID;
 
-            await dbItems.Save(dropshipItem.Dropshipping);
+            await dbItems.InsertItem(dropshipItem.Dropshipping);
 
             return Ok();
         }
@@ -470,14 +470,7 @@ namespace AliseeksApi.Controllers
         {
             var username = HttpContext.User.Identity.Name;
 
-            var oauths = await oauthdb.GetMultipleByUsername(username);
-
-            var integration = oauths.FirstOrDefault(x => x.ID == id);
-
-            if (integration != null)
-                await oauthdb.Delete(integration);
-            else
-                return NotFound();
+            await oauthdb.DeleteByID(id, username);
 
             return Ok();
         }
