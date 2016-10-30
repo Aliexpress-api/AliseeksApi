@@ -53,12 +53,16 @@ namespace AliseeksApi.Services
                     throw new AllowedException("ID, Title and Link cannot be empty");
 
                 item = new AliexpressQueryString().DecodeItemLink(item.Link);
+
+                //Means there was a translation error in the URI format
+                if (item.ID.EmptyOrNull() & item.Title.EmptyOrNull())
+                    return null;
             }
 
             string endpoint = SearchEndpoints.AliexpressItemUrl(item.Title, item.ID);
 
             var response = "";
-            var detail = new ItemDetail();
+            ItemDetail detail = null;
 
             try
             {

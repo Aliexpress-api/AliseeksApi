@@ -69,6 +69,9 @@ namespace AliseeksApi.Controllers
 
             var detail = await search.ItemSearch(item);
 
+            if (detail == null)
+                return NotFound("Aliexpress link was incorrect");
+
             //Get integration access tokens
             var oauth = await oauthdb.RetrieveOAuth<OAuthShopifyModel>(username);
             if (oauth == null)
@@ -82,6 +85,91 @@ namespace AliseeksApi.Controllers
                     Source = item,
                     Username = username,
                     Rules = DropshipListingRules.Default,
+                    OAuthID = oauth.ID
+                },
+                Product = new ShopifyProductModel()
+                {
+                    BodyHtml = detail.Description,
+                    Title = detail.Name.Replace("/", "-"), //Fix slash in name issue
+
+                    Variants = new List<ShopifyVarant>()
+                    {
+                        new ShopifyVarant()
+                        {
+                            InventoryPolicy = InventoryPolicy.Deny,
+                            InventoryManagement = InventoryManagement.Shopify,
+                            RequiresShipping = true,
+                            Taxable = true
+                        }
+                    }
+                }
+            };
+
+            //Add images from shopify
+            var images = new List<ShopifyImageType>();
+            foreach (var image in detail.ImageUrls)
+            {
+                images.Add(new ShopifyImageType()
+                {
+                    Src = image
+                });
+            }
+
+            //Set the first image to the main dropship model image
+            if (images.Count > 0)
+                dropshipItem.Dropshipping.Image = images[0].Src;
+
+            dropshipItem.Product.Images = images.ToArray();
+
+            //Apply dropshipping rules
+            dropshipItem.Dropshipping.Rules.ApplyRules(detail, dropshipItem.Product);
+
+            //Add product
+            var product = await shopify.AddProduct(username, dropshipItem.Product, oauth);
+
+            dropshipItem.Dropshipping.ListingID = product.ID;
+
+            await dbItems.InsertItem(dropshipItem.Dropshipping);
+
+            return Ok();
+        }
+
+        //Add product by DropshipItemModel
+        [HttpPost]
+        [Route("/api/[controller]/add-advanced")]
+        public async Task<IActionResult> Add([FromBody]DropshipItemModel model)
+        {
+            var item = model.Source;
+
+            var username = "Guest";
+
+            if (HttpContext.User.Identity.IsAuthenticated)
+                username = HttpContext.User.Identity.Name;
+
+            if (item.Link.EmptyOrNull() && !item.Title.EmptyOrNull() && !item.ID.EmptyOrNull())
+                item.Link = SearchEndpoints.AliexpressItemUrl(item.Title, item.ID);
+
+            var detail = await search.ItemSearch(item);
+
+            if (detail == null)
+                return NotFound("Aliexpress link was incorrect");
+
+            model.Source.Title = detail.Name;
+            model.Source.ID = detail.ItemID;
+
+            //Get integration access tokens
+            var oauth = await oauthdb.RetrieveOAuth<OAuthShopifyModel>(username);
+            if (oauth == null)
+                return NotFound("No dropshipping integration setup for user");
+
+            //Create the dropship item and model
+            var dropshipItem = new DropshipItem()
+            {
+                Dropshipping = new DropshipItemModel()
+                {
+                    Source = item,
+                    Username = username,
+                    Rules = model.Rules,
                     OAuthID = oauth.ID
                 },
                 Product = new ShopifyProductModel()
@@ -148,6 +236,9 @@ namespace AliseeksApi.Controllers
 
             //Get aliexpress item details
             var sourceItem = await search.ItemSearch(model.Source);
+
+            if (sourceItem == null)
+                return NotFound("Aliexpress link was incorrect");
 
             if (sourceItem == null)
                 return NotFound("Aliexpress source is incorrect");

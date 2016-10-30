@@ -219,6 +219,9 @@ namespace AliseeksApi.Services.Dropshipping
         {
             var detail = await search.ItemSearch(item);
 
+            if (detail == null)
+                return;
+
             //Get integration access tokens
             var oauth = await oauthdb.RetrieveOAuth<OAuthShopifyModel>(username);
             if (oauth == null)
@@ -308,6 +311,9 @@ namespace AliseeksApi.Services.Dropshipping
         public async Task SyncProduct(string username, DropshipItem item)
         {
             var sourceItem = await search.ItemSearch(item.Dropshipping.Source);
+
+            if (sourceItem == null)
+                return;
 
             var rules = item.Dropshipping.Rules ?? DropshipListingRules.Default;
 

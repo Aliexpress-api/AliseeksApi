@@ -62,20 +62,30 @@ namespace AliseeksApi.Services.Aliexpress
 
         public SingleItemRequest DecodeItemLink(string link)
         {
-            var uri = new Uri(link);
-            var routeMatcher = new RouteMatcher();
-            var values = routeMatcher.Match(aliexpressItemLinkTemplate, uri.LocalPath);
-
-            var singleItem = new SingleItemRequest()
+            try
             {
-                Source = "Aliexpress"
-            };
-            
-            singleItem.Title = values.ContainsKey("itemTitle") ? values["itemTitle"].ToString() : String.Empty;
-            singleItem.ID = values.ContainsKey("itemid") ? values["itemid"].ToString() : String.Empty;
-            singleItem.Link = link;
+                var uri = new Uri(link);
+                var routeMatcher = new RouteMatcher();
+                var values = routeMatcher.Match(aliexpressItemLinkTemplate, uri.LocalPath);
 
-            return singleItem;
+                var singleItem = new SingleItemRequest()
+                {
+                    Source = "Aliexpress"
+                };
+
+                singleItem.Title = values.ContainsKey("itemTitle") ? values["itemTitle"].ToString() : String.Empty;
+                singleItem.ID = values.ContainsKey("itemid") ? values["itemid"].ToString() : String.Empty;
+                singleItem.Link = link;
+
+                return singleItem;
+            }
+            catch(Exception e)
+            {
+                return new SingleItemRequest()
+                {
+                    Link = link
+                };
+            }
         }
     }
 }
