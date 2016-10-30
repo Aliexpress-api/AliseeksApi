@@ -26,7 +26,7 @@ namespace AliseeksApi.Storage.Postgres.Dropshipping
             command.Parameters.AddWithValue("@source", NpgsqlTypes.NpgsqlDbType.Jsonb, JsonConvert.SerializeObject(model.Source));
             command.Parameters.AddWithValue("@listingid", model.ListingID);
             command.Parameters.AddWithValue("@rules", NpgsqlTypes.NpgsqlDbType.Jsonb, JsonConvert.SerializeObject(model.Rules));
-            command.Parameters.AddWithValue("@image", model.Image);
+            command.Parameters.AddWithValue("@image", model.Image ?? String.Empty);
             command.Parameters.AddWithValue("@oauthid", model.OAuthID);
 
             await db.CommandNonqueryAsync(command);

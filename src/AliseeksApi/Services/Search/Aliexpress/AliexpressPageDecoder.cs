@@ -12,6 +12,11 @@ using Newtonsoft.Json;
 
 namespace AliseeksApi.Utility
 {
+    public enum AliexpressImageType
+    {
+        ThumbGallery, SingleImage
+    }
+
 	public class AliexpressPageDecoder
 	{
 		//Matches all decimal numbers with OPTIONAL decimal point
@@ -386,7 +391,13 @@ namespace AliseeksApi.Utility
             var quantityElement = node.GetNodesByCssClass("packaging-des");
 
             //<ul class="image-thumb-list" id="j-image-thumb-list">
+            var imageType = AliexpressImageType.ThumbGallery;
             var imageElement = node.GetNodesByCssClass("image-thumb-list");
+            if (imageElement == null)
+            {
+                imageElement = node.GetNodesByCssClass("ui-image-viewer-thumb-frame");
+                imageType = AliexpressImageType.SingleImage;
+            }
 
             //<em data-role="stock-num" id="j-sell-stock-num">5 lots</em>
             var stockNumElement = node.GetJavascriptParam("window.runParams.totalAvailQuantity");
@@ -515,19 +526,38 @@ namespace AliseeksApi.Utility
 
             if(imageElement != null)
             {
-                var images = imageElement.Descendants().Where(p => p.Attributes.Contains("class") && p.Attributes["class"].Value.Contains("img-thumb-item"));
-                var imageLinks = new List<string>();
-
-                foreach(var image in images)
+                if(imageType == AliexpressImageType.ThumbGallery)
                 {
-                    var imgElement = image.Descendants().First(p => p.Name == "img");
-                    var imageLink = imgElement.Attributes["src"].Value;
-                    imageLink = imageLink.Replace("50x50", "640x640");
+                    var images = imageElement.Descendants().Where(p => p.Attributes.Contains("class") && p.Attributes["class"].Value.Contains("img-thumb-item"));
+                    var imageLinks = new List<string>();
 
-                    imageLinks.Add(imageLink);
+                    foreach (var image in images)
+                    {
+                        var imgElement = image.Descendants().First(p => p.Name == "img");
+                        var imageLink = imgElement.Attributes["src"].Value;
+                        imageLink = imageLink.Replace("50x50", "640x640");
+
+                        imageLinks.Add(imageLink);
+                    }
+
+                    item.ImageUrls = imageLinks.ToArray();
                 }
 
-                item.ImageUrls = imageLinks.ToArray();
+                if (imageType == AliexpressImageType.SingleImage)
+                {
+                    var images = imageElement.Descendants().Where(p => p.Name == "img");
+
+                    var imageLinks = new List<string>();
+
+                    foreach (var image in images)
+                    {
+                        var imagelink = image.Attributes["src"].Value;
+
+                        imageLinks.Add(imagelink);
+                    }
+
+                    item.ImageUrls = imageLinks.ToArray();
+                }
             }
 
             if(stockNumElement != null)

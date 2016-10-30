@@ -105,21 +105,24 @@ namespace AliseeksApi.Controllers
                 }
             };
 
-            //Add images from shopify
-            var images = new List<ShopifyImageType>();
-            foreach (var image in detail.ImageUrls)
+            if (detail.ImageUrls != null)
             {
-                images.Add(new ShopifyImageType()
+                //Add images from shopify
+                var images = new List<ShopifyImageType>();
+                foreach (var image in detail.ImageUrls)
                 {
-                    Src = image
-                });
+                    images.Add(new ShopifyImageType()
+                    {
+                        Src = image
+                    });
+                }
+
+                //Set the first image to the main dropship model image
+                if (images.Count > 0)
+                    dropshipItem.Dropshipping.Image = images[0].Src;
+
+                dropshipItem.Product.Images = images.ToArray();
             }
-
-            //Set the first image to the main dropship model image
-            if (images.Count > 0)
-                dropshipItem.Dropshipping.Image = images[0].Src;
-
-            dropshipItem.Product.Images = images.ToArray();
 
             //Apply dropshipping rules
             dropshipItem.Dropshipping.Rules.ApplyRules(detail, dropshipItem.Product);
@@ -190,21 +193,25 @@ namespace AliseeksApi.Controllers
                 }
             };
 
-            //Add images from shopify
-            var images = new List<ShopifyImageType>();
-            foreach (var image in detail.ImageUrls)
+            if (detail.ImageUrls != null)
             {
-                images.Add(new ShopifyImageType()
+                //Add images from shopify
+                var images = new List<ShopifyImageType>();
+                foreach (var image in detail.ImageUrls)
                 {
-                    Src = image
-                });
+                    images.Add(new ShopifyImageType()
+                    {
+                        Src = image
+                    });
+                }
+
+
+                //Set the first image to the main dropship model image
+                if (images.Count > 0)
+                    dropshipItem.Dropshipping.Image = images[0].Src;
+
+                dropshipItem.Product.Images = images.ToArray();
             }
-
-            //Set the first image to the main dropship model image
-            if (images.Count > 0)
-                dropshipItem.Dropshipping.Image = images[0].Src;
-
-            dropshipItem.Product.Images = images.ToArray();
 
             //Apply dropshipping rules
             dropshipItem.Dropshipping.Rules.ApplyRules(detail, dropshipItem.Product);
