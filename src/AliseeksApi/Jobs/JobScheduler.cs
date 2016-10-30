@@ -16,7 +16,7 @@ namespace AliseeksApi.Jobs
 
         public static void ScheduleJobs()
         {
-            RemoveJobs();
+            //RemoveJobs();
 
             if(!RunJobs) { return; }
 

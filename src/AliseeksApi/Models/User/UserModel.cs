@@ -22,5 +22,6 @@ namespace AliseeksApi.Models.User
     public class UserMetaModel
     {
         public string PrimaryUse { get; set; }
+        public string Referral { get; set; }
     }
 }

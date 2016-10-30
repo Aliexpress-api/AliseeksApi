@@ -109,7 +109,8 @@ namespace AliseeksApi.Services.User
                 Email = model.Email.ToLower(),
                 Meta = new UserMetaModel()
                 {
-                    PrimaryUse = model.PrimaryUse
+                    PrimaryUse = model.PrimaryUse,
+                    Referral = model.Referral
                 }
             };
 

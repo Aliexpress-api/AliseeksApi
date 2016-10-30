@@ -12,5 +12,6 @@ namespace AliseeksApi.Models.User
         public string Email { get; set; }
 
         public string PrimaryUse { get; set; }
+        public string Referral { get; set; }
     }
 }
