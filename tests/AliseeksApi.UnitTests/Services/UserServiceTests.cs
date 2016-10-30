@@ -32,7 +32,7 @@ namespace AliseeksApi.UnitTests.Services
             emailMock = new Mock<IEmailService>();
             auth = new AliseeksJwtAuthentication(new Microsoft.Extensions.Options.OptionsWrapper<JwtOptions>(jwtOptions), new FakeRavenClient().Object);
 
-            service = new UserService(auth, dbMock.Object, hasher, emailMock.Object, new FakeRavenClient().Object);
+            service = new UserService(auth, dbMock.Object, hasher, emailMock.Object, new FakeRavenClient().Object, null);
         }
 
         [Fact]

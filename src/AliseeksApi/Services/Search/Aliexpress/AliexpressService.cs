@@ -15,7 +15,10 @@ using SharpRaven.Core.Data;
 using SharpRaven.Core;
 using AliseeksApi.Services.Search;
 using AliseeksApi.Services.Aliexpress;
+using AliseeksApi.Models.Search.Aliexpress;
 using Hangfire;
+using Microsoft.AspNetCore.Routing;
+using AliseeksApi.Exceptions;
 
 namespace AliseeksApi.Services
 {
@@ -40,6 +43,77 @@ namespace AliseeksApi.Services
             var items = await searchItems(this.ServiceModel);
 
             return items;
+        }
+
+        public override async Task<ItemDetail> SearchItem(SingleItemRequest item)
+        {
+            if(item.ID.EmptyOrNull() && item.Title.EmptyOrNull())
+            {
+                if (item.Link.EmptyOrNull())
+                    throw new AllowedException("ID, Title and Link cannot be empty");
+
+                item = new AliexpressQueryString().DecodeItemLink(item.Link);
+            }
+
+            string endpoint = SearchEndpoints.AliexpressItemUrl(item.Title, item.ID);
+
+            var response = "";
+            var detail = new ItemDetail();
+
+            try
+            {
+                var responseMessage = await http.Get(endpoint);
+                response = await responseMessage.Content.ReadAsStringAsync();
+            }
+            catch(Exception e)
+            {
+
+            }
+
+            try
+            {
+                detail = new AliexpressPageDecoder().ScrapeSingleItem(response);
+
+                var freights = await CalculateFreight(new FreightAjaxRequest()
+                {
+                    ProductID = item.ID,
+                    Country = item.ShipCountry,
+                    CurrencyCode = "USD"
+                });
+
+                if(freights.Length > 0)
+                {
+                    var def = freights.FirstOrDefault(x => x.IsDefault == true);
+                    detail.ShippingPrice = def.LocalPrice;
+                    detail.ShippingType = def.CompanyDisplayName;
+                }
+            }
+            catch(Exception e)
+            {
+                await raven.CaptureNetCoreEventAsync(e);
+            }
+
+            return detail;
+        }
+
+        public async Task<FreightAjax[]> CalculateFreight(FreightAjaxRequest model)
+        {
+            string endpoint = SearchEndpoints.AliexpressFreight(model.ProductID, model.CurrencyCode, model.Country);
+
+            var response = await (await http.Get(endpoint)).Content.ReadAsStringAsync();
+
+            try
+            {
+                var freights = new AliexpressPageDecoder().ScrapeFreightResults(response);
+
+                return freights;
+            }
+            catch(Exception e)
+            {
+                await raven.CaptureNetCoreEventAsync(e);
+            }
+
+            return null;
         }
 
         //Function that actually goes out and gets Aliexpress search and converts it
@@ -69,7 +143,7 @@ namespace AliseeksApi.Services
 
                 try
                 {
-                    resultTasks.Add(http.Get(endpoint));
+                    resultTasks.Add((await http.Get(endpoint)).Content.ReadAsStringAsync());
                 }
                 catch (Exception e)
                 {
@@ -84,7 +158,7 @@ namespace AliseeksApi.Services
             {
                 try
                 {
-                    var result = new AliexpressPageDecoder().DecodePage(response);
+                    var result = new AliexpressPageDecoder().ScrapeSearchResults(response);
 
                     if (results == null)
                     {
@@ -112,6 +186,13 @@ namespace AliseeksApi.Services
         public Task CacheItems(SearchCriteria search)
         {
             throw new NotImplementedException();
+        }
+
+        private SingleItemRequest ConvertAliexpressURL(SingleItemRequest item)
+        {
+            var link = item.Link;
+
+            return new AliexpressQueryString().DecodeItemLink(link);
         }
     }
 }

@@ -10,17 +10,88 @@ namespace AliseeksApi.Services
 {
     public class HttpService : IHttpService
     {
-        public async Task<string> Get(string endpoint)
+        public async Task<HttpResponseMessage> Get(string endpoint, Action<HttpClient> configuration = null)
         {
-            HttpContent content = null;
+            var response = new HttpResponseMessage();
 
-            using (HttpClient client = new HttpClient())
+            HttpClientHandler handler = new HttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = (message, x502, chain, policy) =>
             {
-                var response = await client.GetAsync(endpoint);
-                content = response.Content;
+                return true;
+            };
+
+            using (HttpClient client = new HttpClient(handler))
+            {
+                try
+                {
+                    if(configuration != null)
+                        configuration(client);
+
+                    response = await client.GetAsync(endpoint);
+                }
+                catch(Exception e)
+                {
+
+                }
             }
 
-            return await content.ReadAsStringAsync();
+            return response;
+        }
+
+        public async Task<HttpResponseMessage> Post(string endpoint, HttpContent content, Action<HttpClient> configuration = null)
+        {
+            var response = new HttpResponseMessage();
+
+            HttpClientHandler handler = new HttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = (message, x502, chain, policy) =>
+            {
+                return true;
+            };
+
+            using (HttpClient client = new HttpClient(handler))
+            {
+                try
+                {
+                    if (configuration != null)
+                        configuration(client);
+
+                    response = await client.PostAsync(endpoint, content);
+                }
+                catch (Exception e)
+                {
+
+                }
+            }
+
+            return response;
+        }
+
+        public async Task<HttpResponseMessage> Put(string endpoint, HttpContent content, Action<HttpClient> configuration = null)
+        {
+            var response = new HttpResponseMessage();
+
+            HttpClientHandler handler = new HttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = (message, x502, chain, policy) =>
+            {
+                return true;
+            };
+
+            using (HttpClient client = new HttpClient(handler))
+            {
+                try
+                {
+                    if (configuration != null)
+                        configuration(client);
+
+                    response = await client.PutAsync(endpoint, content);
+                }
+                catch (Exception e)
+                {
+
+                }
+            }
+
+            return response;
         }
     }
 }

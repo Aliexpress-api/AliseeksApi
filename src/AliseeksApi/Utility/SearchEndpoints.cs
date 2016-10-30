@@ -14,5 +14,16 @@ namespace AliseeksApi.Utility
 
         //http://www.dhgate.com/w/40mm+12v/1.html?leftpars=c2k9cHJpY2Umc3Q9dXBkaGdhdGU=
         public const string DHGatePageUrl = @"http://www.dhgate.com/w/{SEARCH}/{PAGE}.html?leftpars={KEY}";
+
+        public static string AliexpressItemUrl(string itemTitle, string itemId)
+        {
+            itemTitle = itemTitle.Replace("/", "-").Replace(" ", "-"); //Fix slash in item title issue
+            return $@"http://www.aliexpress.com/item/{itemTitle}/{itemId}.html";
+        }
+
+        public static string AliexpressFreight(string productID, string currencyCode, string country)
+        {
+            return $@"http://freight.aliexpress.com/ajaxFreightCalculateService.htm?productid={productID}&count=1&currencyCode={currencyCode}&country={country}";
+        }
     }
 }

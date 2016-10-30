@@ -77,7 +77,7 @@ namespace AliseeksApi.Controllers
             };
 
             if (HttpContext.User.Identity.IsAuthenticated)
-                model.Username = HttpContext.User.FindFirst(ClaimTypes.Name).Value;
+                model.Username = HttpContext.User.Identity.Name;
 
             this.search.SaveSearch(model);
 
@@ -85,6 +85,7 @@ namespace AliseeksApi.Controllers
         }
 
         [HttpDelete]
+<<<<<<< HEAD
         [Route("/api/[controller]/save/{id}")]
         [Authorize]
         public IActionResult DeleteSearch(int id)
@@ -101,5 +102,40 @@ namespace AliseeksApi.Controllers
 
             return Ok();
         }
+=======
+        [Authorize]
+        [Route("/api/[controller]/save/{id}")]
+        public async Task<IActionResult> DeleteSearch(int id)
+        {
+            var username = HttpContext.User.Identity.Name;
+
+            await search.DeleteSearch(id, username);
+
+            return Ok();
+        }
+
+        [HttpPost]
+        [Route("/api/[controller]/price")]
+        public async Task<IActionResult> GetPriceHistory([FromBody]PriceHistoryRequestModel[] models)
+        {
+            var response = await search.GetPriceHistories(models);
+
+            return Json(response);
+        }
+
+        [HttpGet]
+        [Route("/api/[controller]/item")]
+        public async Task<IActionResult> GetSingleItem([FromQuery]SingleItemRequest request)
+        {
+            var response = await search.ItemSearch(request);
+
+            if(response == null)
+            {
+                return NotFound();
+            }
+
+            return Json(response);
+        }
+>>>>>>> refs/remotes/origin/feature/itempricetable
     }
 }

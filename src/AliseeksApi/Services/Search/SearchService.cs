@@ -19,6 +19,7 @@ namespace AliseeksApi.Services.Search
     public class SearchService : ISearchService
     {
         private const int resultsPerPage = 27;
+        private const int maxSavedSearchesPerUser = 20;
 
         private readonly WebSearchService[] services;
         private readonly IRavenClient raven;
@@ -83,13 +84,45 @@ namespace AliseeksApi.Services.Search
 
         public async Task<SavedSearchModel> SaveSearch(SavedSearchModel model)
         {
+            //Only allow certain numbers of saves per user
+            if(await db.CountSavedSearchs(model.Username) > maxSavedSearchesPerUser)
+            {
+                var saves = await db.SelectSaveSearches(model.Username);
+                await db.DeleteSavedSearch(model.Username, saves.FirstOrDefault().ID);
+            }
+
             await db.AddSavedSearchAsync(model);
             return model;
         }
 
+<<<<<<< HEAD
         public async Task DeleteSearch(SavedSearchModel model)
         {
             await db.DeleteSavedSearchAsync(model);
+=======
+        public async Task DeleteSearch(int id, string username)
+        {
+            await db.DeleteSavedSearch(username, id);
+        }
+
+        public async Task<ItemPriceHistoryModel[]> GetPriceHistories(PriceHistoryRequestModel[] models)
+        {
+            return await db.SelectItemPriceHistoriesAsync(models);
+        }
+
+        public async Task<ItemDetail> ItemSearch(SingleItemRequest model)
+        {
+            var detail = new ItemDetail();
+
+            switch(model.Source)
+            {
+                case "Aliexpress":
+                    detail = await services.First(x => x.ServiceType == SearchServiceType.Aliexpress).SearchItem(model);
+                    break;
+            }
+
+            return detail;
+>>>>>>> refs/remotes/origin/feature/itempricetable
         }
 
         void storeSearchHistory(SearchCriteria search)

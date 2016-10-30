@@ -32,7 +32,6 @@
     "AsyncStackTraceEx": "1.0.1.1",
     "Hangfire": "1.6.5",
     "Hangfire.PostgreSql.NetCore": "1.4.3",
-
     //Custom DLLs
     "RavenSharp.Core": "1.0.0-beta-1"
   },

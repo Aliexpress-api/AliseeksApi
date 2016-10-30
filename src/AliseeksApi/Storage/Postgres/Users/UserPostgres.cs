@@ -21,7 +21,11 @@ namespace AliseeksApi.Storage.Postgres.Users
         const string userUpdateColumns = "password, salt, email, reset, meta";
         const string userTable = "users";
         
+<<<<<<< HEAD
         const string savedSearchSelectColumns = "created, criteria, id";
+=======
+        const string savedSearchSelectColumns = "created, criteria, username, id";
+>>>>>>> refs/remotes/origin/feature/itempricetable
         const string savedSearchTable = "savesearch";
 
         public UsersPostgres(IPostgresDb db)
@@ -188,6 +192,10 @@ namespace AliseeksApi.Storage.Postgres.Users
                 var savedSearch = new SavedSearchModel();
                 savedSearch.Created = reader.GetDateTime(ordinal++);
                 savedSearch.Criteria = JsonConvert.DeserializeObject<SearchCriteria>(reader.GetString(ordinal++));
+<<<<<<< HEAD
+=======
+                savedSearch.Username = reader.GetString(ordinal++);
+>>>>>>> refs/remotes/origin/feature/itempricetable
                 savedSearch.ID = reader.GetInt32(ordinal++);
 
                 savedSearches.Add(savedSearch);

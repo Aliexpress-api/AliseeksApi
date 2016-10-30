@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Net.Http;
 using AliseeksApi.Models.User;
+using AliseeksApi.Models.Dropshipping;
 
 namespace AliseeksApi.Services.User
 {
@@ -15,5 +16,6 @@ namespace AliseeksApi.Services.User
         Task<BaseServiceResponse> ResetPassword(UserResetPasswordModel model);
         Task<BaseServiceResponse> ResetValid(UserResetValidModel model);
         Task<UserOverviewModel> Overview(string username);
+        string CreateJWT(UserLoginModel user, DropshipAccount account);
     }
 }
