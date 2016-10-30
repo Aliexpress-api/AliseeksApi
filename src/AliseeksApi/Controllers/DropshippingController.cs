@@ -19,6 +19,7 @@ using AliseeksApi.Storage.Postgres.Dropshipping;
 using AliseeksApi.Services.Search;
 using AliseeksApi.Services.OAuth;
 using AliseeksApi.Models.OAuth;
+using AliseeksApi.Utility;
 
 namespace AliseeksApi.Controllers
 {
@@ -58,12 +59,74 @@ namespace AliseeksApi.Controllers
         [Route("/api/[controller]/add")]
         public async Task<IActionResult> Add([FromBody]SingleItemRequest item)
         {
-            if (HttpContext.User.Identity.IsAuthenticated)
-                item.Username = HttpContext.User.Identity.Name;
-            else
-                item.Username = "Guest";
+            var username = "Guest";
 
-            await dropship.AddProduct(item.Username, item);
+            if (HttpContext.User.Identity.IsAuthenticated)
+                username = HttpContext.User.Identity.Name;
+
+            if (item.Link.EmptyOrNull() && !item.Title.EmptyOrNull() && !item.ID.EmptyOrNull())
+                item.Link = SearchEndpoints.AliexpressItemUrl(item.Title, item.ID);
+
+            var detail = await search.ItemSearch(item);
+
+            //Get integration access tokens
+            var oauth = await oauthdb.RetrieveOAuth<OAuthShopifyModel>(username);
+            if (oauth == null)
+                return NotFound("No dropshipping integration setup for user");
+
+            //Create the dropship item and model
+            var dropshipItem = new DropshipItem()
+            {
+                Dropshipping = new DropshipItemModel()
+                {
+                    Source = item,
+                    Username = username,
+                    Rules = DropshipListingRules.Default,
+                    OAuthID = oauth.ID
+                },
+                Product = new ShopifyProductModel()
+                {
+                    BodyHtml = detail.Description,
+                    Title = detail.Name.Replace("/", "-"), //Fix slash in name issue
+
+                    Variants = new List<ShopifyVarant>()
+                    {
+                        new ShopifyVarant()
+                        {
+                            InventoryPolicy = InventoryPolicy.Deny,
+                            InventoryManagement = InventoryManagement.Shopify,
+                            RequiresShipping = true,
+                            Taxable = true
+                        }
+                    }
+                }
+            };
+
+            //Add images from shopify
+            var images = new List<ShopifyImageType>();
+            foreach (var image in detail.ImageUrls)
+            {
+                images.Add(new ShopifyImageType()
+                {
+                    Src = image
+                });
+            }
+
+            //Set the first image to the main dropship model image
+            if (images.Count > 0)
+                dropshipItem.Dropshipping.Image = images[0].Src;
+
+            dropshipItem.Product.Images = images.ToArray();
+
+            //Apply dropshipping rules
+            dropshipItem.Dropshipping.Rules.ApplyRules(detail, dropshipItem.Product);
+
+            //Add product
+            var product = await shopify.AddProduct(username, dropshipItem.Product, oauth);
+
+            dropshipItem.Dropshipping.ListingID = product.ID;
+
+            await dbItems.Save(dropshipItem.Dropshipping);
 
             return Ok();
         }
@@ -75,6 +138,8 @@ namespace AliseeksApi.Controllers
         {
             //Get username from jwt
             var username = HttpContext.User.Identity.Name;
+
+            model.Username = username;
 
             //Get integration information
             var oauth = await oauthdb.RetrieveOAuth<OAuthShopifyModel>(username);
@@ -103,7 +168,78 @@ namespace AliseeksApi.Controllers
             }
 
             //Save the model in the DB
-            await dbItems.Save(model);
+            await dbItems.UpdateRules(model);
+
+            return Ok();
+        }
+
+        //Add to integration
+        [HttpGet]
+        [Route("/api/[controller]/{itemid}/add")]
+        public async Task<IActionResult> AddToIntegration(int itemid)
+        {
+            var model = await dbItems.GetOneByID(itemid);
+
+            var username = HttpContext.User.Identity.Name;
+
+            model.Username = username;
+
+            var oauth = await oauthdb.RetrieveOAuth<OAuthShopifyModel>(username);
+            if (oauth == null)
+                return NotFound("No integrations");
+
+            var detail = await search.ItemSearch(model.Source);
+
+            if (detail == null)
+                return NotFound("Aliexpress source is incorrect");
+
+            //Create the dropship item and model
+            var dropshipItem = new DropshipItem()
+            {
+                Dropshipping = model,
+                Product = new ShopifyProductModel()
+                {
+                    BodyHtml = detail.Description,
+                    Title = detail.Name.Replace("/", "-"), //Fix slash in name issue
+
+                    Variants = new List<ShopifyVarant>()
+                    {
+                        new ShopifyVarant()
+                        {
+                            InventoryPolicy = InventoryPolicy.Deny,
+                            InventoryManagement = InventoryManagement.Shopify,
+                            RequiresShipping = true,
+                            Taxable = true
+                        }
+                    }
+                }
+            };
+
+            //Add images from shopify
+            var images = new List<ShopifyImageType>();
+            foreach (var image in detail.ImageUrls)
+            {
+                images.Add(new ShopifyImageType()
+                {
+                    Src = image
+                });
+            }
+
+            //Set the first image to the main dropship model image
+            if (images.Count > 0)
+                dropshipItem.Dropshipping.Image = images[0].Src;
+
+            dropshipItem.Product.Images = images.ToArray();
+
+            //Apply dropshipping rules
+            dropshipItem.Dropshipping.Rules.ApplyRules(detail, dropshipItem.Product);
+
+            //Add product
+            var product = await shopify.AddProduct(username, dropshipItem.Product, oauth);
+
+            dropshipItem.Dropshipping.ListingID = product.ID;
+
+            await dbItems.UpdateListing(dropshipItem.Dropshipping);
 
             return Ok();
         }
@@ -179,6 +315,17 @@ namespace AliseeksApi.Controllers
             };
 
             return Json(dropshipItem);
+        }
+
+        [HttpDelete]
+        [Route("/api/[controller]/{itemid}")]
+        public async Task<IActionResult> DeleteItem(int itemid)
+        {
+            var username = HttpContext.User.Identity.Name;
+
+            await dbItems.DeleteItem(itemid, username);
+
+            return Ok();
         }
 
         //Obsolete method

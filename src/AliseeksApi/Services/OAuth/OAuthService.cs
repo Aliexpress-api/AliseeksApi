@@ -17,9 +17,9 @@ namespace AliseeksApi.Services.OAuth
             this.db = db;
         }
 
-        public async Task<T> RetrieveOAuth<T>(string username) where T : IOAuthModel
+        public async Task<T> RetrieveOAuth<T>(string username) where T : IOAuthModel, new()
         {
-            var def = default(T);
+            var def = new T();
             var service = def.GetServiceName();
 
             //Get all registered integrations for user

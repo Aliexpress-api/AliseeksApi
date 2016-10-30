@@ -7,6 +7,7 @@ using AliseeksApi.Models.Dropshipping;
 using Npgsql;
 using AliseeksApi.Utility.Extensions;
 using AliseeksApi.Utility;
+using Newtonsoft.Json;
 
 namespace AliseeksApi.Storage.Postgres.Dropshipping
 {
@@ -106,6 +107,44 @@ namespace AliseeksApi.Storage.Postgres.Dropshipping
             });
 
             return items.ToArray();
+        }
+
+        public async Task UpdateRules(DropshipItemModel model)
+        {
+            var itemsTableName = ORMQueryHelper.GetTableName<DropshipItemModel>();
+
+            var command = new NpgsqlCommand();
+            command.CommandText = $"UPDATE {itemsTableName} SET rules=@rules WHERE id={model.ID} AND username=@username";
+            command.Parameters.AddWithValue("rules", NpgsqlTypes.NpgsqlDbType.Jsonb, JsonConvert.SerializeObject(model.Rules));
+            command.Parameters.AddWithValue("username", model.Username);
+
+
+            await db.CommandNonqueryAsync(command);
+        }
+
+        public async Task UpdateListing(DropshipItemModel model)
+        {
+            var itemsTableName = ORMQueryHelper.GetTableName<DropshipItemModel>();
+
+            var command = new NpgsqlCommand();
+            command.CommandText = $"UPDATE {itemsTableName} SET listingid=@listingid WHERE id={model.ID} AND username=@username";
+            command.Parameters.AddWithValue("listingid", model.ListingID);
+            command.Parameters.AddWithValue("username", model.Username);
+
+
+            await db.CommandNonqueryAsync(command);
+        }
+
+        public async Task DeleteItem(int itemid, string username)
+        {
+            var itemsTableName = ORMQueryHelper.GetTableName<DropshipItemModel>();
+
+            var command = new NpgsqlCommand();
+            command.CommandText = $"DELETE FROM {itemsTableName} WHERE username=@username AND id=@id";
+            command.Parameters.AddWithValue("username", username);
+            command.Parameters.AddWithValue("id", itemid);
+
+            await db.CommandNonqueryAsync(command);
         }
     }
 }

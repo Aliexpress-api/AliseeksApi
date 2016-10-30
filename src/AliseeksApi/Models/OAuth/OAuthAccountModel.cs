@@ -16,7 +16,7 @@ namespace AliseeksApi.Models.OAuth
         [DataColumn("username")]
         public string Username { get; set; }
 
-        [DataColumn("acocuntid")]
+        [DataColumn("accountid")]
         public int AccountID { get; set; } //FK to DropshipAccount
 
         [DataColumn("access_token")]

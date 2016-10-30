@@ -37,24 +37,25 @@ namespace AliseeksApi.Services.Dropshipping
             var actualPrice = detail.Price + detail.ShippingPrice;
             var adjusted = actualPrice;
 
-            if(rules.FixedPricePercentage.HasValue)
+            switch(rules.PriceRule)
             {
-                adjusted = actualPrice * rules.FixedPricePercentage.Value;
+                case PriceRule.FixedPrice:
+                    adjusted = rules.Price;
+                    break;
+
+                case PriceRule.PriceAdjustment:
+                    adjusted = actualPrice + rules.Price;
+                    break;
+
+                case PriceRule.PricePercentage:
+                    adjusted = actualPrice * rules.Price / 100; //Convert to percentage
+                    break;
+
+                default:
+                    break;
             }
-            else
-            {
-                if(rules.FixedPriceAdjustment.HasValue)
-                {
-                    adjusted = actualPrice + rules.FixedPriceAdjustment.Value;
-                }
-                else
-                {
-                    if(rules.FixedPrice.HasValue)
-                    {
-                        adjusted = rules.FixedPrice.Value;
-                    }
-                }
-            }
+
+            if(adjusted < 0) { adjusted = 0.01m; } //Cant have negative price
 
             var variant = product.Variants.FirstOrDefault() ?? new ShopifyVarant();
             if (variant.Price != Math.Truncate(adjusted * 100) / 100)
@@ -71,17 +72,21 @@ namespace AliseeksApi.Services.Dropshipping
             var actualStock = detail.Stock;
             var adjusted = actualStock;
 
-            if (rules.FixedStockAdjustment.HasValue)
+            switch(rules.StockRule)
             {
-                adjusted = actualStock + rules.FixedStockAdjustment.Value;
+                case StockRule.FixedStock:
+                    adjusted = rules.Stock;
+                    break;
+
+                case StockRule.StockAdjustment:
+                    adjusted = actualStock - rules.Stock;
+                    break;
+
+                default:
+                    break;
             }
-            else
-            {
-                if (rules.FixedStock.HasValue)
-                {
-                    adjusted = rules.FixedStock.Value;
-                }
-            }
+
+            if (adjusted < 0) { adjusted = 0; } //cant have negative inventory
 
             var variant = product.Variants.FirstOrDefault() ?? new ShopifyVarant();
             if (variant.InventoryQuantity != adjusted)
