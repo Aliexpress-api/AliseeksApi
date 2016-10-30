@@ -95,13 +95,6 @@ namespace AliseeksApi.Storage.Postgres.Search
             });
         }
 
-<<<<<<< HEAD
-        public async Task DeleteSavedSearchAsync(SavedSearchModel search)
-        {
-            var command = new NpgsqlCommand();
-            command.CommandText = $"DELETE FROM {searchSaveTable} WHERE id=@id";
-            command.Parameters.AddWithValue("@id", search.ID);
-=======
         public async Task AddItemPriceHistoryAsync(ItemPriceHistoryModel model)
         {
             await db.TransactionAsync(transaction =>
@@ -310,7 +303,6 @@ namespace AliseeksApi.Storage.Postgres.Search
             command.Parameters.AddWithValue("username", username);
             command.Parameters.AddWithValue("id", id);
 
->>>>>>> refs/remotes/origin/feature/itempricetable
             await db.CommandNonqueryAsync(command);
         }
     }

@@ -85,24 +85,6 @@ namespace AliseeksApi.Controllers
         }
 
         [HttpDelete]
-<<<<<<< HEAD
-        [Route("/api/[controller]/save/{id}")]
-        [Authorize]
-        public IActionResult DeleteSearch(int id)
-        {
-            var model = new SavedSearchModel()
-            {
-                ID = id
-            };
-
-            if (HttpContext.User.Identity.IsAuthenticated)
-                model.Username = HttpContext.User.FindFirst(ClaimTypes.Name).Value;
-
-            this.search.DeleteSearch(model);
-
-            return Ok();
-        }
-=======
         [Authorize]
         [Route("/api/[controller]/save/{id}")]
         public async Task<IActionResult> DeleteSearch(int id)
@@ -136,6 +118,5 @@ namespace AliseeksApi.Controllers
 
             return Json(response);
         }
->>>>>>> refs/remotes/origin/feature/itempricetable
     }
 }

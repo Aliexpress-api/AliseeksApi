@@ -95,11 +95,6 @@ namespace AliseeksApi.Services.Search
             return model;
         }
 
-<<<<<<< HEAD
-        public async Task DeleteSearch(SavedSearchModel model)
-        {
-            await db.DeleteSavedSearchAsync(model);
-=======
         public async Task DeleteSearch(int id, string username)
         {
             await db.DeleteSavedSearch(username, id);
@@ -122,7 +117,6 @@ namespace AliseeksApi.Services.Search
             }
 
             return detail;
->>>>>>> refs/remotes/origin/feature/itempricetable
         }
 
         void storeSearchHistory(SearchCriteria search)
