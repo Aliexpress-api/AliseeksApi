@@ -8,8 +8,9 @@ services:
     build: ./src/AliseeksApi/bin/Release/netcoreapp1.0/publish
     ports:
       - "${ALISEEKSAPI_PORTMAP}:${ALISEEKSAPI_PORT}"
+    external_links:
+      - as_postgres
     links:
-      - postgres
       - redis
 
 #  postgres:
